@@ -34,6 +34,10 @@ public class KwikbooksDbContext : DbContext
     // Banking entities
     public DbSet<BankAccount> BankAccounts => Set<BankAccount>();
     public DbSet<BankTransaction> BankTransactions => Set<BankTransaction>();
+    
+    // Recurring entries
+    public DbSet<RecurringJournalEntry> RecurringJournalEntries => Set<RecurringJournalEntry>();
+    public DbSet<RecurringJournalEntryLine> RecurringJournalEntryLines => Set<RecurringJournalEntryLine>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -256,6 +260,26 @@ public class KwikbooksDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(a => a.LinkedAccountId)
                   .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // RecurringJournalEntry configuration
+        modelBuilder.Entity<RecurringJournalEntry>(entity =>
+        {
+            entity.HasIndex(r => r.Name);
+            entity.HasIndex(r => r.NextRunDate);
+        });
+
+        // RecurringJournalEntryLine configuration
+        modelBuilder.Entity<RecurringJournalEntryLine>(entity =>
+        {
+            entity.HasOne(l => l.RecurringJournalEntry)
+                  .WithMany(r => r.Lines)
+                  .HasForeignKey(l => l.RecurringJournalEntryId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(l => l.Account)
+                  .WithMany()
+                  .HasForeignKey(l => l.AccountId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Decimal precision for money fields

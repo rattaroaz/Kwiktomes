@@ -166,6 +166,17 @@ build_metadata.AdditionalFiles.EnableDiagnostics =
 build_metadata.AdditionalFiles.LineInfo = 
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/kimri/OneDrive/Desktop/cloned repos/Kwikbooks/Kwikbooks/Components/Pages/RecurringJournalEntries.razor]
+build_metadata.AdditionalFiles.GenKind = 
+build_metadata.AdditionalFiles.ManifestResourceName = 
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xSZWN1cnJpbmdKb3VybmFsRW50cmllcy5yYXpvcg==
+build_metadata.AdditionalFiles.RelativePath = 
+build_metadata.AdditionalFiles.Inflator = 
+build_metadata.AdditionalFiles.NoWarn = 
+build_metadata.AdditionalFiles.EnableDiagnostics = 
+build_metadata.AdditionalFiles.LineInfo = 
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/kimri/OneDrive/Desktop/cloned repos/Kwikbooks/Kwikbooks/Components/Pages/Settings.razor]
 build_metadata.AdditionalFiles.GenKind = 
 build_metadata.AdditionalFiles.ManifestResourceName = 

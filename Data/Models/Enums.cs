@@ -86,3 +86,16 @@ public enum BillStatus
     Overdue = 5,
     Void = 6
 }
+
+/// <summary>
+/// Frequency for recurring transactions.
+/// </summary>
+public enum RecurrenceFrequency
+{
+    Daily = 1,
+    Weekly = 2,
+    BiWeekly = 3,
+    Monthly = 4,
+    Quarterly = 5,
+    Annually = 6
+}

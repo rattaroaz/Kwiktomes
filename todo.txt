@@ -111,10 +111,10 @@ PHASE 10: CHART OF ACCOUNTS
 ================================================================================
 PHASE 11: JOURNAL ENTRIES
 ================================================================================
-[ ] Journal entry list
-[ ] Create/Edit journal entry
-[ ] Debit/Credit validation (must balance)
-[ ] Recurring journal entries
+[X] Journal entry list
+[X] Create/Edit journal entry
+[X] Debit/Credit validation (must balance)
+[X] Recurring journal entries
 
 ================================================================================
 PHASE 12: REPORTS

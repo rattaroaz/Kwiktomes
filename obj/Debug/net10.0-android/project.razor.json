@@ -713,6 +713,65 @@
         }
       },
       {
+        "HashCode": -481169741,
+        "Kind": "Components.Component",
+        "Name": "Kwikbooks.Components.Pages.RecurringJournalEntries",
+        "AssemblyName": "Kwikbooks",
+        "CaseSensitive": true,
+        "TagMatchingRules": [
+          {
+            "TagName": "RecurringJournalEntries"
+          }
+        ],
+        "BoundAttributes": [
+          {
+            "Kind": "Components.Component",
+            "Name": "EntryId",
+            "TypeName": "System.Int32?",
+            "Metadata": {
+              "Common.PropertyName": "EntryId",
+              "Common.GloballyQualifiedTypeName": "global::System.Int32?"
+            }
+          }
+        ],
+        "Metadata": {
+          "Common.TypeName": "Kwikbooks.Components.Pages.RecurringJournalEntries",
+          "Common.TypeNameIdentifier": "RecurringJournalEntries",
+          "Common.TypeNamespace": "Kwikbooks.Components.Pages",
+          "Runtime.Name": "Components.IComponent"
+        }
+      },
+      {
+        "HashCode": -924378774,
+        "Kind": "Components.Component",
+        "Name": "Kwikbooks.Components.Pages.RecurringJournalEntries",
+        "AssemblyName": "Kwikbooks",
+        "CaseSensitive": true,
+        "TagMatchingRules": [
+          {
+            "TagName": "Kwikbooks.Components.Pages.RecurringJournalEntries"
+          }
+        ],
+        "BoundAttributes": [
+          {
+            "Kind": "Components.Component",
+            "Name": "EntryId",
+            "TypeName": "System.Int32?",
+            "Metadata": {
+              "Common.PropertyName": "EntryId",
+              "Common.GloballyQualifiedTypeName": "global::System.Int32?"
+            }
+          }
+        ],
+        "Metadata": {
+          "Common.TypeName": "Kwikbooks.Components.Pages.RecurringJournalEntries",
+          "Common.TypeNameIdentifier": "RecurringJournalEntries",
+          "Common.TypeNamespace": "Kwikbooks.Components.Pages",
+          "Components.NameMatch": "Components.FullyQualifiedNameMatch",
+          "Runtime.Name": "Components.IComponent"
+        }
+      },
+      {
         "HashCode": 710541420,
         "Kind": "Components.Component",
         "Name": "Kwikbooks.Components.Routes",
@@ -17879,6 +17938,11 @@
     {
       "FilePath": "c:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\Components\\Pages\\Settings.razor",
       "TargetPath": "Components\\Pages\\Settings.razor",
+      "FileKind": "component"
+    },
+    {
+      "FilePath": "c:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\Components\\Pages\\RecurringJournalEntries.razor",
+      "TargetPath": "Components\\Pages\\RecurringJournalEntries.razor",
       "FileKind": "component"
     },
     {

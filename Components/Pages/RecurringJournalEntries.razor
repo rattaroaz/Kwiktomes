@@ -1,0 +1,685 @@
+@page "/recurring-journal-entries"
+@page "/recurring-journal-entries/new"
+@page "/recurring-journal-entries/{EntryId:int}"
+@inject IJournalEntryService JournalEntryService
+@inject IAccountService AccountService
+@inject NavigationManager Navigation
+
+<PageHeader Title="@GetPageTitle()" Subtitle="@GetPageSubtitle()">
+    <ActionContent>
+        @if (!isEditing)
+        {
+            <button class="btn btn-secondary me-2" @onclick="ProcessDueEntriesAsync" disabled="@isProcessing">
+                @(isProcessing ? "Processing..." : "Run Due Entries")
+            </button>
+            <button class="btn btn-primary" @onclick="CreateNewEntry">
+                + New Recurring Entry
+            </button>
+        }
+    </ActionContent>
+</PageHeader>
+
+@if (isLoading)
+{
+    <LoadingSpinner Text="Loading..." />
+}
+else if (isEditing && editingEntry != null)
+{
+    @* Recurring Entry Form *@
+    <div class="entry-form-container">
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger mb-4">@errorMessage</div>
+        }
+        
+        @if (!string.IsNullOrEmpty(successMessage))
+        {
+            <div class="alert alert-success mb-4">@successMessage</div>
+        }
+        
+        <Card Title="Recurring Entry Details">
+            <ChildContent>
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label class="form-label form-label-required">Name</label>
+                        <input type="text" class="form-control" @bind="editingEntry.Name" 
+                               placeholder="e.g., Monthly Rent, Depreciation" />
+                    </div>
+                    <div class="form-group" style="width: 180px;">
+                        <label class="form-label form-label-required">Frequency</label>
+                        <select class="form-control" @bind="editingEntry.Frequency">
+                            @foreach (var freq in Enum.GetValues<RecurrenceFrequency>())
+                            {
+                                <option value="@freq">@FormatFrequency(freq)</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group" style="width: 180px;">
+                        <label class="form-label form-label-required">Start Date</label>
+                        <input type="date" class="form-control" @bind="editingEntry.StartDate" />
+                    </div>
+                    <div class="form-group" style="width: 180px;">
+                        <label class="form-label">End Date (Optional)</label>
+                        <input type="date" class="form-control" @bind="editingEntry.EndDate" />
+                    </div>
+                    <div class="form-group" style="width: 180px;">
+                        <label class="form-label form-label-required">Next Run Date</label>
+                        <input type="date" class="form-control" @bind="editingEntry.NextRunDate" />
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Memo</label>
+                    <textarea class="form-control" rows="2" @bind="editingEntry.Memo" 
+                              placeholder="Description for generated entries"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" @bind="editingEntry.IsActive" id="isActive" />
+                        <label class="form-check-label" for="isActive">Active</label>
+                    </div>
+                    <div class="form-check ms-4">
+                        <input type="checkbox" class="form-check-input" @bind="editingEntry.AutoPost" id="autoPost" />
+                        <label class="form-check-label" for="autoPost">Auto-post generated entries</label>
+                    </div>
+                </div>
+            </ChildContent>
+        </Card>
+        
+        <Card Title="Entry Lines" CssClass="mt-4">
+            <ChildContent>
+                <table class="data-table entry-lines-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40%;">Account</th>
+                            <th>Description</th>
+                            <th style="width: 140px;" class="text-right">Debit</th>
+                            <th style="width: 140px;" class="text-right">Credit</th>
+                            <th style="width: 50px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var line in entryLines)
+                        {
+                            <tr>
+                                <td>
+                                    <select class="form-control form-control-sm" @bind="line.AccountId">
+                                        <option value="0">-- Select Account --</option>
+                                        @foreach (var account in accounts)
+                                        {
+                                            <option value="@account.Id">@account.AccountNumber - @account.Name</option>
+                                        }
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm" 
+                                           @bind="line.Description" placeholder="Line description" />
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm text-right" 
+                                           step="0.01" min="0"
+                                           @bind="line.DebitAmount" 
+                                           @onfocus="() => ClearCreditIfDebit(line)" />
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm text-right" 
+                                           step="0.01" min="0"
+                                           @bind="line.CreditAmount"
+                                           @onfocus="() => ClearDebitIfCredit(line)" />
+                                </td>
+                                <td>
+                                    @if (entryLines.Count > 2)
+                                    {
+                                        <button type="button" class="btn btn-sm btn-secondary" 
+                                                @onclick="() => RemoveLine(line)">🗑️</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2">
+                                <button type="button" class="btn btn-sm btn-secondary" @onclick="AddLine">
+                                    + Add Line
+                                </button>
+                            </td>
+                            <td class="text-right font-mono font-semibold">@TotalDebits.ToString("N2")</td>
+                            <td class="text-right font-mono font-semibold">@TotalCredits.ToString("N2")</td>
+                            <td></td>
+                        </tr>
+                        <tr class="balance-row @(IsBalanced ? "balanced" : "unbalanced")">
+                            <td colspan="2" class="text-right">
+                                @if (IsBalanced)
+                                {
+                                    <span class="text-success">✓ Entry is balanced</span>
+                                }
+                                else
+                                {
+                                    <span class="text-danger">⚠ Entry is not balanced (difference: @Difference.ToString("C2"))</span>
+                                }
+                            </td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </ChildContent>
+        </Card>
+        
+        <div class="form-actions mt-6">
+            <button type="button" class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+            @if (editingEntry.Id > 0)
+            {
+                <button type="button" class="btn btn-info" @onclick="GenerateEntryAsync" 
+                        disabled="@(isSaving || !IsBalanced)">
+                    Generate Entry Now
+                </button>
+            }
+            <button type="button" class="btn btn-primary btn-lg" @onclick="SaveEntryAsync" 
+                    disabled="@(isSaving || !IsBalanced || string.IsNullOrWhiteSpace(editingEntry.Name))">
+                @(isSaving ? "Saving..." : "Save Recurring Entry")
+            </button>
+        </div>
+    </div>
+}
+else if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">
+        <strong>Error:</strong> @errorMessage
+        <button class="btn btn-sm btn-secondary ms-3" @onclick="LoadDataAsync">Retry</button>
+    </div>
+}
+else
+{
+    @* Recurring Entries List *@
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success mb-4">
+            @successMessage
+            <button type="button" class="btn-close float-end" @onclick="() => successMessage = null"></button>
+        </div>
+    }
+    
+    <div class="entries-summary">
+        <div class="summary-card">
+            <div class="summary-icon">🔄</div>
+            <div class="summary-info">
+                <div class="summary-label">Total Templates</div>
+                <div class="summary-value">@entries.Count</div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon">✅</div>
+            <div class="summary-info">
+                <div class="summary-label">Active</div>
+                <div class="summary-value">@entries.Count(e => e.IsActive)</div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon">⏰</div>
+            <div class="summary-info">
+                <div class="summary-label">Due Today</div>
+                <div class="summary-value">@entries.Count(e => e.IsActive && e.NextRunDate <= DateTime.Today)</div>
+            </div>
+        </div>
+    </div>
+
+    @if (entries.Any())
+    {
+        <Card>
+            <ChildContent>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th style="width: 110px;">Frequency</th>
+                            <th style="width: 110px;">Next Run</th>
+                            <th style="width: 110px;">Last Run</th>
+                            <th class="text-right" style="width: 100px;">Amount</th>
+                            <th style="width: 80px;">Status</th>
+                            <th style="width: 120px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in entries)
+                        {
+                            var isDue = entry.IsActive && entry.NextRunDate <= DateTime.Today;
+                            <tr class="@(entry.IsActive ? "" : "inactive") @(isDue ? "due" : "")">
+                                <td>
+                                    <div class="entry-name">@entry.Name</div>
+                                    @if (!string.IsNullOrEmpty(entry.Memo))
+                                    {
+                                        <div class="entry-memo">@entry.Memo</div>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge badge-info">@entry.FrequencyDisplay</span>
+                                </td>
+                                <td class="@(isDue ? "text-warning font-semibold" : "")">
+                                    @entry.NextRunDate.ToString("MM/dd/yyyy")
+                                    @if (isDue)
+                                    {
+                                        <span title="Due">⚠️</span>
+                                    }
+                                </td>
+                                <td>
+                                    @(entry.LastRunDate?.ToString("MM/dd/yyyy") ?? "—")
+                                </td>
+                                <td class="text-right font-mono">
+                                    @entry.Lines.Sum(l => l.DebitAmount).ToString("C2")
+                                </td>
+                                <td>
+                                    @if (entry.IsActive)
+                                    {
+                                        <span class="badge badge-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-secondary">Inactive</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-sm btn-secondary" title="Edit"
+                                                @onclick="() => EditEntry(entry)">✏️</button>
+                                        @if (entry.IsActive)
+                                        {
+                                            <button class="btn btn-sm btn-info" title="Generate Now"
+                                                    @onclick="() => GenerateFromEntryAsync(entry.Id)">▶️</button>
+                                        }
+                                        <button class="btn btn-sm btn-danger" title="Delete"
+                                                @onclick="() => DeleteEntryAsync(entry)">🗑️</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </ChildContent>
+        </Card>
+    }
+    else
+    {
+        <Card>
+            <ChildContent>
+                <div class="empty-state">
+                    <span class="empty-state-icon">🔄</span>
+                    <div class="empty-state-title">No recurring entries</div>
+                    <div class="empty-state-description">
+                        Create recurring journal entries to automate repetitive transactions like monthly rent or depreciation.
+                    </div>
+                    <button class="btn btn-primary" @onclick="CreateNewEntry">+ New Recurring Entry</button>
+                </div>
+            </ChildContent>
+        </Card>
+    }
+}
+
+<style>
+    .entry-form-container { max-width: 900px; }
+    
+    .entries-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: var(--space-4);
+        margin-bottom: var(--space-4);
+    }
+    
+    .summary-card {
+        background: var(--bg-primary);
+        border-radius: var(--radius-lg);
+        padding: var(--space-4);
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        border: 1px solid var(--border-color);
+    }
+    
+    .summary-icon { font-size: var(--text-2xl); }
+    .summary-label { font-size: var(--text-sm); color: var(--text-secondary); }
+    .summary-value { font-size: var(--text-xl); font-weight: var(--font-semibold); }
+    
+    .form-row { display: flex; gap: var(--space-4); flex-wrap: wrap; align-items: flex-end; }
+    .form-row .form-group { min-width: 120px; }
+    
+    .form-actions {
+        display: flex;
+        gap: var(--space-3);
+        justify-content: flex-end;
+        padding-top: var(--space-4);
+        border-top: 1px solid var(--border-color);
+    }
+    
+    .entry-lines-table input,
+    .entry-lines-table select {
+        margin: 0;
+    }
+    
+    .entry-lines-table tfoot td {
+        padding-top: var(--space-3);
+        border-top: 2px solid var(--border-color);
+    }
+    
+    .balance-row.balanced td { color: var(--success-color); }
+    .balance-row.unbalanced td { color: var(--danger-color); }
+    
+    .entry-name { font-weight: var(--font-medium); }
+    .entry-memo {
+        font-size: var(--text-sm);
+        color: var(--text-muted);
+        max-width: 300px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    tr.inactive { opacity: 0.6; }
+    tr.due { background-color: rgba(245, 158, 11, 0.1); }
+    
+    .action-buttons {
+        display: flex;
+        gap: var(--space-1);
+    }
+    
+    .font-semibold { font-weight: var(--font-semibold); }
+    .me-2 { margin-right: var(--space-2); }
+    .ms-4 { margin-left: var(--space-4); }
+</style>
+
+@code {
+    [Parameter]
+    public int? EntryId { get; set; }
+    
+    private List<RecurringJournalEntry> entries = new();
+    private List<Account> accounts = new();
+    private RecurringJournalEntry? editingEntry;
+    private List<RecurringJournalEntryLine> entryLines = new();
+    private bool isLoading = true;
+    private bool isEditing = false;
+    private bool isSaving = false;
+    private bool isProcessing = false;
+    private string? errorMessage;
+    private string? successMessage;
+    
+    // Computed
+    private decimal TotalDebits => entryLines.Sum(l => l.DebitAmount);
+    private decimal TotalCredits => entryLines.Sum(l => l.CreditAmount);
+    private decimal Difference => Math.Abs(TotalDebits - TotalCredits);
+    private bool IsBalanced => TotalDebits == TotalCredits && TotalDebits > 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+        
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        if (uri.AbsolutePath.EndsWith("/new", StringComparison.OrdinalIgnoreCase))
+        {
+            CreateNewEntry();
+        }
+        else if (EntryId.HasValue && EntryId.Value > 0)
+        {
+            var entry = entries.FirstOrDefault(e => e.Id == EntryId.Value);
+            if (entry != null)
+            {
+                EditEntry(entry);
+            }
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            entries = (await JournalEntryService.GetAllRecurringAsync()).ToList();
+            accounts = (await AccountService.GetActiveAccountsAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading data: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void CreateNewEntry()
+    {
+        editingEntry = new RecurringJournalEntry
+        {
+            StartDate = DateTime.Today,
+            NextRunDate = DateTime.Today,
+            Frequency = RecurrenceFrequency.Monthly,
+            IsActive = true
+        };
+        entryLines = new List<RecurringJournalEntryLine>
+        {
+            new RecurringJournalEntryLine(),
+            new RecurringJournalEntryLine()
+        };
+        isEditing = true;
+        errorMessage = null;
+        successMessage = null;
+    }
+
+    private void EditEntry(RecurringJournalEntry entry)
+    {
+        editingEntry = new RecurringJournalEntry
+        {
+            Id = entry.Id,
+            Name = entry.Name,
+            Memo = entry.Memo,
+            Frequency = entry.Frequency,
+            StartDate = entry.StartDate,
+            EndDate = entry.EndDate,
+            NextRunDate = entry.NextRunDate,
+            LastRunDate = entry.LastRunDate,
+            TimesGenerated = entry.TimesGenerated,
+            IsActive = entry.IsActive,
+            AutoPost = entry.AutoPost
+        };
+        entryLines = entry.Lines.Select(l => new RecurringJournalEntryLine
+        {
+            Id = l.Id,
+            AccountId = l.AccountId,
+            Description = l.Description,
+            DebitAmount = l.DebitAmount,
+            CreditAmount = l.CreditAmount
+        }).ToList();
+        
+        if (entryLines.Count < 2)
+        {
+            while (entryLines.Count < 2)
+                entryLines.Add(new RecurringJournalEntryLine());
+        }
+        
+        isEditing = true;
+        errorMessage = null;
+        successMessage = null;
+    }
+
+    private void CancelEdit()
+    {
+        isEditing = false;
+        editingEntry = null;
+        entryLines.Clear();
+        errorMessage = null;
+        successMessage = null;
+        Navigation.NavigateTo("/recurring-journal-entries");
+    }
+
+    private void AddLine()
+    {
+        entryLines.Add(new RecurringJournalEntryLine());
+    }
+
+    private void RemoveLine(RecurringJournalEntryLine line)
+    {
+        if (entryLines.Count > 2)
+        {
+            entryLines.Remove(line);
+        }
+    }
+
+    private void ClearCreditIfDebit(RecurringJournalEntryLine line)
+    {
+        if (line.DebitAmount > 0)
+            line.CreditAmount = 0;
+    }
+
+    private void ClearDebitIfCredit(RecurringJournalEntryLine line)
+    {
+        if (line.CreditAmount > 0)
+            line.DebitAmount = 0;
+    }
+
+    private async Task SaveEntryAsync()
+    {
+        if (editingEntry == null || !IsBalanced || string.IsNullOrWhiteSpace(editingEntry.Name)) return;
+        
+        var validLines = entryLines.Where(l => l.AccountId > 0 && (l.DebitAmount > 0 || l.CreditAmount > 0)).ToList();
+        if (validLines.Count < 2)
+        {
+            errorMessage = "At least two valid lines with accounts are required.";
+            return;
+        }
+        
+        isSaving = true;
+        errorMessage = null;
+        
+        try
+        {
+            if (editingEntry.Id > 0)
+            {
+                await JournalEntryService.UpdateRecurringAsync(editingEntry, validLines);
+            }
+            else
+            {
+                await JournalEntryService.CreateRecurringAsync(editingEntry, validLines);
+            }
+            
+            await LoadDataAsync();
+            CancelEdit();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving recurring entry: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task GenerateEntryAsync()
+    {
+        if (editingEntry == null || editingEntry.Id == 0) return;
+        
+        isSaving = true;
+        errorMessage = null;
+        
+        try
+        {
+            var generated = await JournalEntryService.GenerateFromRecurringAsync(editingEntry.Id);
+            successMessage = $"Generated journal entry {generated.EntryNumber}";
+            await LoadDataAsync();
+            
+            // Refresh the editing entry to show updated dates
+            var updated = entries.FirstOrDefault(e => e.Id == editingEntry.Id);
+            if (updated != null)
+            {
+                EditEntry(updated);
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error generating entry: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task GenerateFromEntryAsync(int entryId)
+    {
+        try
+        {
+            var generated = await JournalEntryService.GenerateFromRecurringAsync(entryId);
+            successMessage = $"Generated journal entry {generated.EntryNumber}";
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error generating entry: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteEntryAsync(RecurringJournalEntry entry)
+    {
+        try
+        {
+            await JournalEntryService.DeleteRecurringAsync(entry.Id);
+            await LoadDataAsync();
+            successMessage = $"Deleted recurring entry: {entry.Name}";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error deleting entry: {ex.Message}";
+        }
+    }
+
+    private async Task ProcessDueEntriesAsync()
+    {
+        isProcessing = true;
+        errorMessage = null;
+        
+        try
+        {
+            var count = await JournalEntryService.ProcessDueRecurringEntriesAsync();
+            successMessage = count > 0 
+                ? $"Generated {count} journal entr{(count == 1 ? "y" : "ies")} from due recurring entries."
+                : "No recurring entries were due.";
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error processing due entries: {ex.Message}";
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private string FormatFrequency(RecurrenceFrequency freq) => freq switch
+    {
+        RecurrenceFrequency.Daily => "Daily",
+        RecurrenceFrequency.Weekly => "Weekly",
+        RecurrenceFrequency.BiWeekly => "Bi-Weekly",
+        RecurrenceFrequency.Monthly => "Monthly",
+        RecurrenceFrequency.Quarterly => "Quarterly",
+        RecurrenceFrequency.Annually => "Annually",
+        _ => freq.ToString()
+    };
+
+    private string GetPageTitle()
+    {
+        if (isEditing)
+            return editingEntry?.Id > 0 ? $"Edit: {editingEntry.Name}" : "New Recurring Entry";
+        return "Recurring Journal Entries";
+    }
+
+    private string GetPageSubtitle()
+    {
+        if (isEditing)
+            return editingEntry?.Id > 0 ? "Edit recurring journal entry template" : "Create a new recurring entry template";
+        return "Automate repetitive journal entries";
+    }
+}

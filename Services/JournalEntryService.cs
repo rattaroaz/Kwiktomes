@@ -53,6 +53,48 @@ public interface IJournalEntryService : IDataService<JournalEntry>
     /// Gets entries affecting a specific account.
     /// </summary>
     Task<IEnumerable<JournalEntry>> GetByAccountAsync(int accountId);
+    
+    // Recurring journal entry methods
+    
+    /// <summary>
+    /// Gets all recurring journal entries.
+    /// </summary>
+    Task<IEnumerable<RecurringJournalEntry>> GetAllRecurringAsync();
+    
+    /// <summary>
+    /// Gets a recurring entry with its lines.
+    /// </summary>
+    Task<RecurringJournalEntry?> GetRecurringWithLinesAsync(int id);
+    
+    /// <summary>
+    /// Creates a recurring journal entry with lines.
+    /// </summary>
+    Task<RecurringJournalEntry> CreateRecurringAsync(RecurringJournalEntry entry, List<RecurringJournalEntryLine> lines);
+    
+    /// <summary>
+    /// Updates a recurring journal entry.
+    /// </summary>
+    Task<RecurringJournalEntry> UpdateRecurringAsync(RecurringJournalEntry entry, List<RecurringJournalEntryLine> lines);
+    
+    /// <summary>
+    /// Deletes a recurring journal entry.
+    /// </summary>
+    Task<bool> DeleteRecurringAsync(int id);
+    
+    /// <summary>
+    /// Gets recurring entries that are due to run.
+    /// </summary>
+    Task<IEnumerable<RecurringJournalEntry>> GetDueRecurringEntriesAsync();
+    
+    /// <summary>
+    /// Generates a journal entry from a recurring template.
+    /// </summary>
+    Task<JournalEntry> GenerateFromRecurringAsync(int recurringEntryId);
+    
+    /// <summary>
+    /// Processes all due recurring entries.
+    /// </summary>
+    Task<int> ProcessDueRecurringEntriesAsync();
 }
 
 /// <summary>
@@ -217,4 +259,161 @@ public class JournalEntryService : BaseDataService<JournalEntry>, IJournalEntryS
             .OrderByDescending(j => j.EntryDate)
             .ToListAsync();
     }
+
+    #region Recurring Journal Entries
+
+    public async Task<IEnumerable<RecurringJournalEntry>> GetAllRecurringAsync()
+    {
+        return await _context.RecurringJournalEntries
+            .Include(r => r.Lines)
+                .ThenInclude(l => l.Account)
+            .OrderBy(r => r.NextRunDate)
+            .ToListAsync();
+    }
+
+    public async Task<RecurringJournalEntry?> GetRecurringWithLinesAsync(int id)
+    {
+        return await _context.RecurringJournalEntries
+            .Include(r => r.Lines)
+                .ThenInclude(l => l.Account)
+            .FirstOrDefaultAsync(r => r.Id == id);
+    }
+
+    public async Task<RecurringJournalEntry> CreateRecurringAsync(RecurringJournalEntry entry, List<RecurringJournalEntryLine> lines)
+    {
+        entry.CreatedAt = DateTime.UtcNow;
+        entry.Lines = lines;
+        
+        _context.RecurringJournalEntries.Add(entry);
+        await _context.SaveChangesAsync();
+        
+        return entry;
+    }
+
+    public async Task<RecurringJournalEntry> UpdateRecurringAsync(RecurringJournalEntry entry, List<RecurringJournalEntryLine> lines)
+    {
+        var existing = await _context.RecurringJournalEntries
+            .Include(r => r.Lines)
+            .FirstOrDefaultAsync(r => r.Id == entry.Id);
+        
+        if (existing == null)
+            throw new InvalidOperationException("Recurring entry not found");
+        
+        existing.Name = entry.Name;
+        existing.Memo = entry.Memo;
+        existing.Frequency = entry.Frequency;
+        existing.StartDate = entry.StartDate;
+        existing.EndDate = entry.EndDate;
+        existing.NextRunDate = entry.NextRunDate;
+        existing.IsActive = entry.IsActive;
+        existing.AutoPost = entry.AutoPost;
+        existing.UpdatedAt = DateTime.UtcNow;
+        
+        // Remove old lines and add new ones
+        _context.RecurringJournalEntryLines.RemoveRange(existing.Lines);
+        foreach (var line in lines)
+        {
+            line.RecurringJournalEntryId = existing.Id;
+            _context.RecurringJournalEntryLines.Add(line);
+        }
+        
+        await _context.SaveChangesAsync();
+        return existing;
+    }
+
+    public async Task<bool> DeleteRecurringAsync(int id)
+    {
+        var entry = await _context.RecurringJournalEntries.FindAsync(id);
+        if (entry == null)
+            return false;
+        
+        _context.RecurringJournalEntries.Remove(entry);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<IEnumerable<RecurringJournalEntry>> GetDueRecurringEntriesAsync()
+    {
+        var today = DateTime.Today;
+        return await _context.RecurringJournalEntries
+            .Include(r => r.Lines)
+                .ThenInclude(l => l.Account)
+            .Where(r => r.IsActive && r.NextRunDate <= today && (r.EndDate == null || r.EndDate >= today))
+            .OrderBy(r => r.NextRunDate)
+            .ToListAsync();
+    }
+
+    public async Task<JournalEntry> GenerateFromRecurringAsync(int recurringEntryId)
+    {
+        var recurring = await GetRecurringWithLinesAsync(recurringEntryId);
+        if (recurring == null)
+            throw new InvalidOperationException("Recurring entry not found");
+        
+        // Create new journal entry from template
+        var entry = new JournalEntry
+        {
+            EntryNumber = await GetNextEntryNumberAsync(),
+            EntryDate = recurring.NextRunDate,
+            Memo = recurring.Memo,
+            Reference = $"Recurring: {recurring.Name}",
+            Status = recurring.AutoPost ? TransactionStatus.Posted : TransactionStatus.Draft,
+            CreatedAt = DateTime.UtcNow
+        };
+        
+        var lines = recurring.Lines.Select(l => new JournalEntryLine
+        {
+            AccountId = l.AccountId,
+            Description = l.Description,
+            DebitAmount = l.DebitAmount,
+            CreditAmount = l.CreditAmount
+        }).ToList();
+        
+        entry.Lines = lines;
+        _dbSet.Add(entry);
+        
+        // Update recurring entry
+        recurring.LastRunDate = recurring.NextRunDate;
+        recurring.NextRunDate = recurring.CalculateNextRunDate(recurring.NextRunDate);
+        recurring.TimesGenerated++;
+        recurring.UpdatedAt = DateTime.UtcNow;
+        
+        await _context.SaveChangesAsync();
+        
+        // If auto-post, update account balances
+        if (recurring.AutoPost)
+        {
+            foreach (var line in lines)
+            {
+                if (line.DebitAmount > 0)
+                    await _accountService.UpdateBalanceAsync(line.AccountId, line.DebitAmount, isDebit: true);
+                if (line.CreditAmount > 0)
+                    await _accountService.UpdateBalanceAsync(line.AccountId, line.CreditAmount, isDebit: false);
+            }
+        }
+        
+        return entry;
+    }
+
+    public async Task<int> ProcessDueRecurringEntriesAsync()
+    {
+        var dueEntries = await GetDueRecurringEntriesAsync();
+        int count = 0;
+        
+        foreach (var recurring in dueEntries)
+        {
+            try
+            {
+                await GenerateFromRecurringAsync(recurring.Id);
+                count++;
+            }
+            catch
+            {
+                // Log error but continue processing other entries
+            }
+        }
+        
+        return count;
+    }
+
+    #endregion
 }
