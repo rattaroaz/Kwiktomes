@@ -38,6 +38,9 @@ public class KwikbooksDbContext : DbContext
     // Recurring entries
     public DbSet<RecurringJournalEntry> RecurringJournalEntries => Set<RecurringJournalEntry>();
     public DbSet<RecurringJournalEntryLine> RecurringJournalEntryLines => Set<RecurringJournalEntryLine>();
+    
+    // User preferences
+    public DbSet<UserPreferences> UserPreferences => Set<UserPreferences>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

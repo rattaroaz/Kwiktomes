@@ -702,6 +702,136 @@
             Payment methods
             </summary>
         </member>
+        <member name="T:Kwikbooks.Data.Models.UserPreferences">
+            <summary>
+            Represents user preferences and application settings.
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.UserPreferences.Theme">
+            <summary>
+            Application theme: Light, Dark, or System
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.UserPreferences.SidebarCollapsed">
+            <summary>
+            Sidebar collapsed by default
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.UserPreferences.DefaultPageSize">
+            <summary>
+            Default page size for lists
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.UserPreferences.DefaultLandingPage">
+            <summary>
+            Default dashboard page on login
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.UserPreferences.DefaultReportDaysBack">
+            <summary>
+            Default date range for reports (days back from today)
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.UserPreferences.DefaultExportFormat">
+            <summary>
+            Default report format for exports
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.UserPreferences.ShowOverdueInvoiceAlerts">
+            <summary>
+            Show overdue invoice alerts
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.UserPreferences.ShowOverdueBillAlerts">
+            <summary>
+            Show overdue bill alerts
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.UserPreferences.ShowLowInventoryAlerts">
+            <summary>
+            Show low inventory alerts
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.UserPreferences.UpcomingDueAlertDays">
+            <summary>
+            Days before due date to show upcoming due alerts
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.UserPreferences.DateFormat">
+            <summary>
+            Date format preference
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.UserPreferences.TimeFormat">
+            <summary>
+            Time format preference (12h or 24h)
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.UserPreferences.NumberFormat">
+            <summary>
+            Number format for currency display
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.UserPreferences.ConfirmBeforeDelete">
+            <summary>
+            Confirm before deleting records
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.UserPreferences.ConfirmBeforeVoid">
+            <summary>
+            Confirm before voiding transactions
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.UserPreferences.AutoSaveDrafts">
+            <summary>
+            Auto-save draft transactions
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.UserPreferences.ShowProfitLossWidget">
+            <summary>
+            Show profit/loss widget on dashboard
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.UserPreferences.ShowCashFlowWidget">
+            <summary>
+            Show cash flow widget on dashboard
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.UserPreferences.ShowReceivablesWidget">
+            <summary>
+            Show receivables widget on dashboard
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.UserPreferences.ShowPayablesWidget">
+            <summary>
+            Show payables widget on dashboard
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.UserPreferences.ShowRecentTransactionsWidget">
+            <summary>
+            Show recent transactions widget on dashboard
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Data.Models.ApplicationTheme">
+            <summary>
+            Application theme options
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Data.Models.ExportFormat">
+            <summary>
+            Export format options
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Data.Models.TimeFormatPreference">
+            <summary>
+            Time format preferences
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Data.Models.NumberFormatPreference">
+            <summary>
+            Number format preferences for currency display
+            </summary>
+        </member>
         <member name="T:Kwikbooks.Data.Models.Vendor">
             <summary>
             Represents a vendor/supplier (someone you buy from).
@@ -815,6 +945,71 @@
         <member name="T:Kwikbooks.Services.AccountService">
             <summary>
             Implementation of the account service.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.IBackupService">
+            <summary>
+            Service for managing data backup and restore operations.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IBackupService.CreateBackupAsync">
+            <summary>
+            Creates a backup of all data and returns it as a byte array.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IBackupService.RestoreBackupAsync(System.IO.Stream)">
+            <summary>
+            Restores data from a backup file.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IBackupService.GetBackupHistoryAsync">
+            <summary>
+            Gets the list of available automatic backups.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IBackupService.ValidateBackupAsync(System.IO.Stream)">
+            <summary>
+            Validates a backup file without restoring.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IBackupService.GetBackupStatisticsAsync">
+            <summary>
+            Gets backup statistics and info.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.BackupService">
+            <summary>
+            Implementation of the backup service.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.BackupData">
+            <summary>
+            Data structure for backup file contents.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.BackupResult">
+            <summary>
+            Result of a backup operation.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.RestoreResult">
+            <summary>
+            Result of a restore operation.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.BackupInfo">
+            <summary>
+            Information about a backup file.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.BackupValidationResult">
+            <summary>
+            Result of backup validation.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.BackupStatistics">
+            <summary>
+            Statistics about backups.
             </summary>
         </member>
         <member name="T:Kwikbooks.Services.IBankService">
@@ -1455,6 +1650,31 @@
         <member name="T:Kwikbooks.Services.ReportService">
             <summary>
             Implementation of the report service.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.IUserPreferencesService">
+            <summary>
+            Service for managing user preferences.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IUserPreferencesService.GetPreferencesAsync">
+            <summary>
+            Gets the user preferences. Creates defaults if none exist.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IUserPreferencesService.UpdatePreferencesAsync(Kwikbooks.Data.Models.UserPreferences)">
+            <summary>
+            Updates the user preferences.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IUserPreferencesService.ResetToDefaultsAsync">
+            <summary>
+            Resets preferences to default values.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.UserPreferencesService">
+            <summary>
+            Implementation of the user preferences service.
             </summary>
         </member>
         <member name="T:Kwikbooks.Services.VendorTransactionItem">

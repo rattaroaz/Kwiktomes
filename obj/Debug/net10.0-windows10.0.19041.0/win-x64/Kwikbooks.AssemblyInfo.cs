@@ -17,7 +17,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Kwikbooks")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0+0e58cff319bd19a4132be65610e25e7cd87b5b4a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0+85cb6f32f8b28d52e64c74ae03367444264fd3f7")]
 [assembly: System.Reflection.AssemblyProductAttribute("Kwikbooks")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Kwikbooks")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

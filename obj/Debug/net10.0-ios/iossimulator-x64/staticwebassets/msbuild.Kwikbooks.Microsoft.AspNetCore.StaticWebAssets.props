@@ -32,13 +32,33 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>zspwo6qxiv</Fingerprint>
-      <Integrity>XeX1+sXga1CSZxzFu3VW4++sqPrXvKy9xXUVOA/Hiyc=</Integrity>
+      <Fingerprint>7gozatqung</Fingerprint>
+      <Integrity>h2QYlPGai8ooHxjOA0OdapzA4ImL9/eOeGaLZO/CAIg=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <FileLength>799</FileLength>
-      <LastWriteTime>Mon, 01 Dec 2025 04:56:09 GMT</LastWriteTime>
+      <FileLength>838</FileLength>
+      <LastWriteTime>Tue, 02 Dec 2025 15:07:31 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\index.html'))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\app.js'))">
+      <SourceType>Package</SourceType>
+      <SourceId>Kwikbooks</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>/</BasePath>
+      <RelativePath>js/app.js</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <Fingerprint>dc0e5fgmrh</Fingerprint>
+      <Integrity>w8Vc+yGylCz4PXXeTJfEzesHI1a/vvlGXuxy7Pnq/qI=</Integrity>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <FileLength>842</FileLength>
+      <LastWriteTime>Tue, 02 Dec 2025 15:07:20 GMT</LastWriteTime>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\app.js'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Kwikbooks.styles.css'))">
       <SourceType>Package</SourceType>

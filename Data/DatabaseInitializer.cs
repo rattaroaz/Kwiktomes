@@ -9,7 +9,7 @@ namespace Kwikbooks.Data;
 public static class DatabaseInitializer
 {
     // Increment this when schema changes to force database recreation
-    private const int SchemaVersion = 2;
+    private const int SchemaVersion = 3;
     
     /// <summary>
     /// Ensures the database is created and applies any pending migrations.

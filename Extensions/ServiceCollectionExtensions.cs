@@ -83,6 +83,12 @@ public static class ServiceCollectionExtensions
         
         // Report service
         services.AddScoped<IReportService, ReportService>();
+        
+        // User preferences service
+        services.AddScoped<IUserPreferencesService, UserPreferencesService>();
+        
+        // Backup service
+        services.AddScoped<IBackupService, BackupService>();
 
         return services;
     }

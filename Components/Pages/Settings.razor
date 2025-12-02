@@ -1,5 +1,8 @@
 @page "/settings"
 @inject ICompanyService CompanyService
+@inject IUserPreferencesService UserPreferencesService
+@inject IBackupService BackupService
+@inject IJSRuntime JSRuntime
 
 <PageHeader Title="Company Settings" Subtitle="Manage your business profile and preferences" />
 
@@ -36,6 +39,12 @@ else if (company != null)
             </button>
             <button class="tab @(activeTab == "branding" ? "active" : "")" @onclick="@(() => SetActiveTab("branding"))">
                 Branding
+            </button>
+            <button class="tab @(activeTab == "preferences" ? "active" : "")" @onclick="@(() => SetActiveTab("preferences"))">
+                Preferences
+            </button>
+            <button class="tab @(activeTab == "data" ? "active" : "")" @onclick="@(() => SetActiveTab("data"))">
+                Data Management
             </button>
         </div>
 
@@ -356,6 +365,268 @@ else if (company != null)
                 </Card>
             </div>
 
+            @* User Preferences Tab *@
+            <div class="tab-content @(activeTab == "preferences" ? "active" : "")">
+                @if (preferences != null)
+                {
+                    <Card Title="Display Settings">
+                        <div class="form-row">
+                            <div class="form-group flex-1">
+                                <label class="form-label">Theme</label>
+                                <InputSelect @bind-Value="preferences.Theme" class="form-control">
+                                    <option value="@ApplicationTheme.System">System Default</option>
+                                    <option value="@ApplicationTheme.Light">Light</option>
+                                    <option value="@ApplicationTheme.Dark">Dark</option>
+                                </InputSelect>
+                            </div>
+                            <div class="form-group flex-1">
+                                <label class="form-label">Default Page Size</label>
+                                <InputSelect @bind-Value="preferences.DefaultPageSize" class="form-control">
+                                    <option value="10">10 items</option>
+                                    <option value="25">25 items</option>
+                                    <option value="50">50 items</option>
+                                    <option value="100">100 items</option>
+                                </InputSelect>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group flex-1">
+                                <label class="form-label">Default Landing Page</label>
+                                <InputSelect @bind-Value="preferences.DefaultLandingPage" class="form-control">
+                                    <option value="/">Dashboard</option>
+                                    <option value="/invoices">Invoices</option>
+                                    <option value="/bills">Bills</option>
+                                    <option value="/customers">Customers</option>
+                                    <option value="/accounts">Chart of Accounts</option>
+                                    <option value="/reports">Reports</option>
+                                </InputSelect>
+                            </div>
+                            <div class="form-group flex-1">
+                                <div class="form-check mt-4">
+                                    <InputCheckbox @bind-Value="preferences.SidebarCollapsed" class="form-check-input" id="sidebarCollapsed" />
+                                    <label class="form-check-label" for="sidebarCollapsed">Sidebar collapsed by default</label>
+                                </div>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card Title="Date & Number Formatting" CssClass="mt-4">
+                        <div class="form-row">
+                            <div class="form-group flex-1">
+                                <label class="form-label">Date Format</label>
+                                <InputSelect @bind-Value="preferences.DateFormat" class="form-control">
+                                    <option value="MM/dd/yyyy">MM/DD/YYYY (12/31/2024)</option>
+                                    <option value="dd/MM/yyyy">DD/MM/YYYY (31/12/2024)</option>
+                                    <option value="yyyy-MM-dd">YYYY-MM-DD (2024-12-31)</option>
+                                    <option value="MMMM d, yyyy">Month D, YYYY (December 31, 2024)</option>
+                                </InputSelect>
+                            </div>
+                            <div class="form-group flex-1">
+                                <label class="form-label">Time Format</label>
+                                <InputSelect @bind-Value="preferences.TimeFormat" class="form-control">
+                                    <option value="@TimeFormatPreference.TwelveHour">12-hour (2:30 PM)</option>
+                                    <option value="@TimeFormatPreference.TwentyFourHour">24-hour (14:30)</option>
+                                </InputSelect>
+                            </div>
+                        </div>
+                        <div class="form-group" style="max-width: 300px;">
+                            <label class="form-label">Number Format</label>
+                            <InputSelect @bind-Value="preferences.NumberFormat" class="form-control">
+                                <option value="@NumberFormatPreference.USFormat">US (1,234.56)</option>
+                                <option value="@NumberFormatPreference.EuropeanFormat">European (1.234,56)</option>
+                                <option value="@NumberFormatPreference.IndianFormat">Indian (1,23,456.78)</option>
+                                <option value="@NumberFormatPreference.SwissFormat">Swiss (1'234.56)</option>
+                            </InputSelect>
+                        </div>
+                    </Card>
+
+                    <Card Title="Notifications & Alerts" CssClass="mt-4">
+                        <div class="form-row">
+                            <div class="form-group flex-1">
+                                <div class="form-check">
+                                    <InputCheckbox @bind-Value="preferences.ShowOverdueInvoiceAlerts" class="form-check-input" id="overdueInvoice" />
+                                    <label class="form-check-label" for="overdueInvoice">Show overdue invoice alerts</label>
+                                </div>
+                                <div class="form-check mt-2">
+                                    <InputCheckbox @bind-Value="preferences.ShowOverdueBillAlerts" class="form-check-input" id="overdueBill" />
+                                    <label class="form-check-label" for="overdueBill">Show overdue bill alerts</label>
+                                </div>
+                                <div class="form-check mt-2">
+                                    <InputCheckbox @bind-Value="preferences.ShowLowInventoryAlerts" class="form-check-input" id="lowInventory" />
+                                    <label class="form-check-label" for="lowInventory">Show low inventory alerts</label>
+                                </div>
+                            </div>
+                            <div class="form-group flex-1">
+                                <label class="form-label">Upcoming Due Alert (Days Before)</label>
+                                <InputNumber @bind-Value="preferences.UpcomingDueAlertDays" class="form-control" min="0" max="30" style="max-width: 150px;" />
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card Title="Confirmations" CssClass="mt-4">
+                        <div class="form-check">
+                            <InputCheckbox @bind-Value="preferences.ConfirmBeforeDelete" class="form-check-input" id="confirmDelete" />
+                            <label class="form-check-label" for="confirmDelete">Confirm before deleting records</label>
+                        </div>
+                        <div class="form-check mt-2">
+                            <InputCheckbox @bind-Value="preferences.ConfirmBeforeVoid" class="form-check-input" id="confirmVoid" />
+                            <label class="form-check-label" for="confirmVoid">Confirm before voiding transactions</label>
+                        </div>
+                        <div class="form-check mt-2">
+                            <InputCheckbox @bind-Value="preferences.AutoSaveDrafts" class="form-check-input" id="autoSave" />
+                            <label class="form-check-label" for="autoSave">Auto-save draft transactions</label>
+                        </div>
+                    </Card>
+
+                    <Card Title="Dashboard Widgets" CssClass="mt-4">
+                        <p class="form-text mb-3">Choose which widgets to display on your dashboard:</p>
+                        <div class="widget-grid">
+                            <div class="form-check">
+                                <InputCheckbox @bind-Value="preferences.ShowProfitLossWidget" class="form-check-input" id="plWidget" />
+                                <label class="form-check-label" for="plWidget">Profit & Loss</label>
+                            </div>
+                            <div class="form-check">
+                                <InputCheckbox @bind-Value="preferences.ShowCashFlowWidget" class="form-check-input" id="cfWidget" />
+                                <label class="form-check-label" for="cfWidget">Cash Flow</label>
+                            </div>
+                            <div class="form-check">
+                                <InputCheckbox @bind-Value="preferences.ShowReceivablesWidget" class="form-check-input" id="arWidget" />
+                                <label class="form-check-label" for="arWidget">Accounts Receivable</label>
+                            </div>
+                            <div class="form-check">
+                                <InputCheckbox @bind-Value="preferences.ShowPayablesWidget" class="form-check-input" id="apWidget" />
+                                <label class="form-check-label" for="apWidget">Accounts Payable</label>
+                            </div>
+                            <div class="form-check">
+                                <InputCheckbox @bind-Value="preferences.ShowRecentTransactionsWidget" class="form-check-input" id="rtWidget" />
+                                <label class="form-check-label" for="rtWidget">Recent Transactions</label>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <div class="form-actions mt-4">
+                        <button type="button" class="btn btn-primary" @onclick="SavePreferencesAsync" disabled="@isSavingPreferences">
+                            @(isSavingPreferences ? "Saving..." : "💾 Save Preferences")
+                        </button>
+                        <button type="button" class="btn btn-secondary" @onclick="ResetPreferencesAsync">
+                            🔄 Reset to Defaults
+                        </button>
+                    </div>
+                }
+            </div>
+
+            @* Data Management Tab *@
+            <div class="tab-content @(activeTab == "data" ? "active" : "")">
+                <Card Title="Backup Data">
+                    <p class="mb-4">Create a backup of all your data including company information, transactions, customers, vendors, and settings.</p>
+                    
+                    @if (backupStats != null)
+                    {
+                        <div class="backup-stats mb-4">
+                            <div class="stat-item">
+                                <span class="stat-label">Total Records:</span>
+                                <span class="stat-value">@backupStats.TotalRecords.ToString("N0")</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Last Backup:</span>
+                                <span class="stat-value">@(backupStats.LastBackupDate?.ToString("g") ?? "Never")</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Backup Size:</span>
+                                <span class="stat-value">@backupStats.LastBackupSizeDisplay</span>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="backup-actions">
+                        <button type="button" class="btn btn-primary" @onclick="CreateBackupAsync" disabled="@isBackingUp">
+                            @if (isBackingUp)
+                            {
+                                <span>Creating Backup...</span>
+                            }
+                            else
+                            {
+                                <span>📦 Create Backup</span>
+                            }
+                        </button>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(backupMessage))
+                    {
+                        <div class="alert @(backupSuccess ? "alert-success" : "alert-danger") mt-3">
+                            @backupMessage
+                        </div>
+                    }
+                </Card>
+
+                <Card Title="Restore Data" CssClass="mt-4">
+                    <div class="alert alert-warning mb-4">
+                        <strong>Warning:</strong> Restoring data will replace ALL existing data. A backup will be created automatically before restore.
+                    </div>
+                    
+                    <div class="restore-section">
+                        <InputFile OnChange="HandleRestoreFileSelected" accept=".zip" class="d-none" id="restoreFile" />
+                        <label for="restoreFile" class="btn btn-secondary">
+                            📁 Select Backup File
+                        </label>
+                        
+                        @if (selectedRestoreFile != null)
+                        {
+                            <div class="selected-file mt-3">
+                                <span class="file-name">@selectedRestoreFile.Name</span>
+                                <span class="file-size">(@FormatFileSize(selectedRestoreFile.Size))</span>
+                            </div>
+                            
+                            <button type="button" class="btn btn-danger mt-3" @onclick="RestoreBackupAsync" disabled="@isRestoring">
+                                @(isRestoring ? "Restoring..." : "⚠️ Restore Backup")
+                            </button>
+                        }
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(restoreMessage))
+                    {
+                        <div class="alert @(restoreSuccess ? "alert-success" : "alert-danger") mt-3">
+                            @restoreMessage
+                        </div>
+                    }
+                </Card>
+
+                <Card Title="Backup History" CssClass="mt-4">
+                    @if (backupHistory != null && backupHistory.Any())
+                    {
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>File Name</th>
+                                    <th>Size</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var backup in backupHistory.Take(10))
+                                {
+                                    <tr>
+                                        <td>@backup.CreatedAt.ToString("g")</td>
+                                        <td>@backup.FileName</td>
+                                        <td>@backup.FileSizeDisplay</td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-secondary" @onclick="() => DownloadBackup(backup)">
+                                                ⬇️ Download
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <p class="text-muted">No backups found.</p>
+                    }
+                </Card>
+            </div>
+
             <div class="form-actions mt-6">
                 <button type="submit" class="btn btn-primary btn-lg" disabled="@isSaving">
                     @if (isSaving)
@@ -468,15 +739,89 @@ else if (company != null)
         font-size: var(--text-sm);
         font-weight: var(--font-medium);
     }
+    
+    .widget-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: var(--space-3);
+    }
+    
+    .backup-stats {
+        display: flex;
+        gap: var(--space-6);
+        flex-wrap: wrap;
+        padding: var(--space-4);
+        background-color: var(--bg-secondary);
+        border-radius: var(--radius-lg);
+    }
+    
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-1);
+    }
+    
+    .stat-label {
+        font-size: var(--text-sm);
+        color: var(--text-muted);
+    }
+    
+    .stat-value {
+        font-size: var(--text-lg);
+        font-weight: var(--font-semibold);
+    }
+    
+    .backup-actions {
+        display: flex;
+        gap: var(--space-3);
+    }
+    
+    .restore-section {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .selected-file {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-2) var(--space-3);
+        background-color: var(--bg-secondary);
+        border-radius: var(--radius-md);
+    }
+    
+    .file-name {
+        font-weight: var(--font-medium);
+    }
+    
+    .file-size {
+        color: var(--text-muted);
+        font-size: var(--text-sm);
+    }
 </style>
 
 @code {
     private Company? company;
+    private UserPreferences? preferences;
+    private BackupStatistics? backupStats;
+    private List<BackupInfo>? backupHistory;
+    
     private bool isLoading = true;
     private bool isSaving = false;
+    private bool isSavingPreferences = false;
+    private bool isBackingUp = false;
+    private bool isRestoring = false;
     private bool showSuccessMessage = false;
     private string activeTab = "profile";
     private string? errorMessage;
+    
+    // Backup/Restore state
+    private string? backupMessage;
+    private bool backupSuccess;
+    private string? restoreMessage;
+    private bool restoreSuccess;
+    private IBrowserFile? selectedRestoreFile;
 
     protected override async Task OnInitializedAsync()
     {
@@ -490,6 +835,9 @@ else if (company != null)
         try
         {
             company = await CompanyService.GetCompanyAsync();
+            preferences = await UserPreferencesService.GetPreferencesAsync();
+            backupStats = await BackupService.GetBackupStatisticsAsync();
+            backupHistory = await BackupService.GetBackupHistoryAsync();
         }
         catch (Exception ex)
         {
@@ -578,5 +926,139 @@ else if (company != null)
             "([a-z])([A-Z])", 
             "$1 $2"
         );
+    }
+
+    // User Preferences Methods
+    private async Task SavePreferencesAsync()
+    {
+        if (preferences == null) return;
+        
+        isSavingPreferences = true;
+        try
+        {
+            await UserPreferencesService.UpdatePreferencesAsync(preferences);
+            showSuccessMessage = true;
+            
+            _ = Task.Delay(3000).ContinueWith(_ =>
+            {
+                showSuccessMessage = false;
+                InvokeAsync(StateHasChanged);
+            });
+        }
+        finally
+        {
+            isSavingPreferences = false;
+        }
+    }
+
+    private async Task ResetPreferencesAsync()
+    {
+        isSavingPreferences = true;
+        try
+        {
+            preferences = await UserPreferencesService.ResetToDefaultsAsync();
+        }
+        finally
+        {
+            isSavingPreferences = false;
+        }
+    }
+
+    // Backup/Restore Methods
+    private async Task CreateBackupAsync()
+    {
+        isBackingUp = true;
+        backupMessage = null;
+        
+        try
+        {
+            var result = await BackupService.CreateBackupAsync();
+            backupSuccess = result.Success;
+            backupMessage = result.Message;
+            
+            if (result.Success)
+            {
+                // Refresh backup stats and history
+                backupStats = await BackupService.GetBackupStatisticsAsync();
+                backupHistory = await BackupService.GetBackupHistoryAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            backupSuccess = false;
+            backupMessage = $"Backup failed: {ex.Message}";
+        }
+        finally
+        {
+            isBackingUp = false;
+        }
+    }
+
+    private void HandleRestoreFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedRestoreFile = e.File;
+        restoreMessage = null;
+    }
+
+    private async Task RestoreBackupAsync()
+    {
+        if (selectedRestoreFile == null) return;
+        
+        isRestoring = true;
+        restoreMessage = null;
+        
+        try
+        {
+            using var stream = selectedRestoreFile.OpenReadStream(maxAllowedSize: 100 * 1024 * 1024); // 100MB max
+            using var memoryStream = new MemoryStream();
+            await stream.CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
+            
+            var result = await BackupService.RestoreBackupAsync(memoryStream);
+            restoreSuccess = result.Success;
+            restoreMessage = result.Message;
+            
+            if (result.Success)
+            {
+                // Reload all data after restore
+                await LoadDataAsync();
+                selectedRestoreFile = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            restoreSuccess = false;
+            restoreMessage = $"Restore failed: {ex.Message}";
+        }
+        finally
+        {
+            isRestoring = false;
+        }
+    }
+
+    private async Task DownloadBackup(BackupInfo backup)
+    {
+        try
+        {
+            var fileBytes = await File.ReadAllBytesAsync(backup.FilePath);
+            var base64 = Convert.ToBase64String(fileBytes);
+            await JSRuntime.InvokeVoidAsync("downloadFile", backup.FileName, base64);
+            backupMessage = "Download started!";
+            backupSuccess = true;
+        }
+        catch (Exception ex)
+        {
+            backupMessage = $"Error downloading backup: {ex.Message}";
+            backupSuccess = false;
+        }
+    }
+
+    private string FormatFileSize(long size)
+    {
+        if (size < 1024)
+            return $"{size} B";
+        if (size < 1024 * 1024)
+            return $"{size / 1024.0:F1} KB";
+        return $"{size / (1024.0 * 1024.0):F1} MB";
     }
 }

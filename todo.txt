@@ -136,15 +136,19 @@ PHASE 12: REPORTS
 ================================================================================
 PHASE 13: SETTINGS & CONFIGURATION
 ================================================================================
-[ ] Company settings page
-[ ] Fiscal year settings
-[ ] Tax rate configuration
-[ ] Invoice customization (logo, terms)
-[ ] User preferences
-[ ] Data backup/restore
+[X] Company settings page
+[X] Fiscal year settings
+[X] Tax rate configuration
+[X] Invoice customization (logo, terms)
+[X] User preferences
+[X] Data backup/restore
 
 ================================================================================
-PHASE 14: ADVANCED FEATURES (Future)
+PHASE 14: Import Files from Quickbooks
+================================================================================
+[ ] Be able to import files from Quickbooks
+================================================================================
+PHASE 15: ADVANCED FEATURES (Future)
 ================================================================================
 [ ] Multi-currency support
 [ ] Payroll basics

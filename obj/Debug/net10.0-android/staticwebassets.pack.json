@@ -9,16 +9,20 @@
       "PackagePath": "staticwebassets\\_framework\\blazor.webview.js"
     },
     {
-      "Id": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\obj\\Debug\\net10.0-android\\scopedcss\\bundle\\Kwikbooks.styles.css",
+      "Id": "c:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\obj\\Debug\\net10.0-android\\scopedcss\\bundle\\Kwikbooks.styles.css",
       "PackagePath": "staticwebassets\\Kwikbooks.styles.css"
     },
     {
-      "Id": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\wwwroot\\app.css",
+      "Id": "c:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\wwwroot\\app.css",
       "PackagePath": "staticwebassets\\app.css"
     },
     {
-      "Id": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\wwwroot\\index.html",
+      "Id": "c:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\wwwroot\\index.html",
       "PackagePath": "staticwebassets\\index.html"
+    },
+    {
+      "Id": "c:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\wwwroot\\js\\app.js",
+      "PackagePath": "staticwebassets\\js\\app.js"
     },
     {
       "Id": "obj\\Debug\\net10.0-android\\staticwebassets\\msbuild.Kwikbooks.Microsoft.AspNetCore.StaticWebAssetEndpoints.props",

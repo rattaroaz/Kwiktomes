@@ -1,4 +1,4 @@
-<api type="debug" assembly-name="Kwikbooks" mvid="cd121a4e781c4efd9a7ef29a6ddc2d06">
+<api type="debug" assembly-name="Kwikbooks" mvid="715945aecc5f40feabf0693e8ae099f5">
   <java-to-managed>
     <entry java-name="crc6441c5d652541440ff/MainActivity" managed-name="Kwikbooks.MainActivity, Kwikbooks" managed-type-token-id="33554452" />
     <entry java-name="crc6441c5d652541440ff/MainApplication" managed-name="Kwikbooks.MainApplication, Kwikbooks" managed-type-token-id="33554453" />
