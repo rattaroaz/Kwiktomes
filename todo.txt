@@ -102,11 +102,11 @@ PHASE 9: BANKING
 ================================================================================
 PHASE 10: CHART OF ACCOUNTS
 ================================================================================
-[ ] Accounts list with hierarchy
-[ ] Add/Edit account form
-[ ] Account types (Asset, Liability, Equity, Income, Expense)
-[ ] Sub-accounts support
-[ ] Account balances
+[X] Accounts list with hierarchy
+[X] Add/Edit account form
+[X] Account types (Asset, Liability, Equity, Income, Expense)
+[X] Sub-accounts support
+[X] Account balances
 
 ================================================================================
 PHASE 11: JOURNAL ENTRIES
