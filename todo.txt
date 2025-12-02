@@ -119,19 +119,19 @@ PHASE 11: JOURNAL ENTRIES
 ================================================================================
 PHASE 12: REPORTS
 ================================================================================
-[ ] Profit & Loss Statement
-[ ] Balance Sheet
-[ ] Cash Flow Statement
-[ ] Accounts Receivable Aging
-[ ] Accounts Payable Aging
-[ ] Trial Balance
-[ ] General Ledger
-[ ] Customer/Vendor statements
-[ ] Sales reports
-[ ] Expense reports
-[ ] Tax summary report
-[ ] Report date range filters
-[ ] Export to PDF/Excel
+[X] Profit & Loss Statement
+[X] Balance Sheet
+[X] Cash Flow Statement
+[X] Accounts Receivable Aging
+[X] Accounts Payable Aging
+[X] Trial Balance
+[X] General Ledger
+[X] Customer/Vendor statements
+[X] Sales reports
+[X] Expense reports
+[X] Tax summary report
+[X] Report date range filters
+[X] Export to PDF/Excel
 
 ================================================================================
 PHASE 13: SETTINGS & CONFIGURATION

@@ -772,6 +772,65 @@
         }
       },
       {
+        "HashCode": -1717782037,
+        "Kind": "Components.Component",
+        "Name": "Kwikbooks.Components.Pages.Reports",
+        "AssemblyName": "Kwikbooks",
+        "CaseSensitive": true,
+        "TagMatchingRules": [
+          {
+            "TagName": "Reports"
+          }
+        ],
+        "BoundAttributes": [
+          {
+            "Kind": "Components.Component",
+            "Name": "ReportType",
+            "TypeName": "System.String",
+            "Metadata": {
+              "Common.PropertyName": "ReportType",
+              "Common.GloballyQualifiedTypeName": "global::System.String"
+            }
+          }
+        ],
+        "Metadata": {
+          "Common.TypeName": "Kwikbooks.Components.Pages.Reports",
+          "Common.TypeNameIdentifier": "Reports",
+          "Common.TypeNamespace": "Kwikbooks.Components.Pages",
+          "Runtime.Name": "Components.IComponent"
+        }
+      },
+      {
+        "HashCode": 644412842,
+        "Kind": "Components.Component",
+        "Name": "Kwikbooks.Components.Pages.Reports",
+        "AssemblyName": "Kwikbooks",
+        "CaseSensitive": true,
+        "TagMatchingRules": [
+          {
+            "TagName": "Kwikbooks.Components.Pages.Reports"
+          }
+        ],
+        "BoundAttributes": [
+          {
+            "Kind": "Components.Component",
+            "Name": "ReportType",
+            "TypeName": "System.String",
+            "Metadata": {
+              "Common.PropertyName": "ReportType",
+              "Common.GloballyQualifiedTypeName": "global::System.String"
+            }
+          }
+        ],
+        "Metadata": {
+          "Common.TypeName": "Kwikbooks.Components.Pages.Reports",
+          "Common.TypeNameIdentifier": "Reports",
+          "Common.TypeNamespace": "Kwikbooks.Components.Pages",
+          "Components.NameMatch": "Components.FullyQualifiedNameMatch",
+          "Runtime.Name": "Components.IComponent"
+        }
+      },
+      {
         "HashCode": 710541420,
         "Kind": "Components.Component",
         "Name": "Kwikbooks.Components.Routes",
@@ -17958,6 +18017,11 @@
     {
       "FilePath": "c:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\Components\\Pages\\Invoices.razor",
       "TargetPath": "Components\\Pages\\Invoices.razor",
+      "FileKind": "component"
+    },
+    {
+      "FilePath": "c:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\Components\\Pages\\Reports.razor",
+      "TargetPath": "Components\\Pages\\Reports.razor",
       "FileKind": "component"
     },
     {

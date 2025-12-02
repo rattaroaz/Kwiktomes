@@ -1,0 +1,1111 @@
+@page "/reports"
+@page "/reports/{ReportType}"
+@inject IReportService ReportService
+@inject ICustomerService CustomerService
+@inject IVendorService VendorService
+@inject IAccountService AccountService
+
+<PageHeader Title="@GetPageTitle()" Subtitle="@GetPageSubtitle()">
+    <ActionContent>
+        @if (!string.IsNullOrEmpty(ReportType))
+        {
+            <button class="btn btn-secondary" @onclick="BackToReports">
+                ← All Reports
+            </button>
+            <button class="btn btn-primary" @onclick="ExportReport" disabled="@isExporting">
+                @(isExporting ? "Exporting..." : "📄 Export PDF")
+            </button>
+        }
+    </ActionContent>
+</PageHeader>
+
+@if (isLoading)
+{
+    <LoadingSpinner Text="Loading report..." />
+}
+else if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">
+        <strong>Error:</strong> @errorMessage
+        <button class="btn btn-sm btn-secondary ms-3" @onclick="LoadReportAsync">Retry</button>
+    </div>
+}
+else if (string.IsNullOrEmpty(ReportType))
+{
+    @* Reports Hub *@
+    <div class="reports-grid">
+        <div class="report-category">
+            <h3 class="category-title">📊 Financial Statements</h3>
+            <div class="report-cards">
+                <a href="/reports/profit-loss" class="report-card">
+                    <span class="report-icon">📈</span>
+                    <span class="report-name">Profit & Loss</span>
+                    <span class="report-desc">Income statement showing revenue and expenses</span>
+                </a>
+                <a href="/reports/balance-sheet" class="report-card">
+                    <span class="report-icon">⚖️</span>
+                    <span class="report-name">Balance Sheet</span>
+                    <span class="report-desc">Assets, liabilities, and equity snapshot</span>
+                </a>
+                <a href="/reports/cash-flow" class="report-card">
+                    <span class="report-icon">💵</span>
+                    <span class="report-name">Cash Flow Statement</span>
+                    <span class="report-desc">Operating, investing, and financing activities</span>
+                </a>
+                <a href="/reports/trial-balance" class="report-card">
+                    <span class="report-icon">📋</span>
+                    <span class="report-name">Trial Balance</span>
+                    <span class="report-desc">All account balances in debit/credit format</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="report-category">
+            <h3 class="category-title">📒 Ledger Reports</h3>
+            <div class="report-cards">
+                <a href="/reports/general-ledger" class="report-card">
+                    <span class="report-icon">📖</span>
+                    <span class="report-name">General Ledger</span>
+                    <span class="report-desc">Detailed transaction history by account</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="report-category">
+            <h3 class="category-title">⏰ Aging Reports</h3>
+            <div class="report-cards">
+                <a href="/reports/ar-aging" class="report-card">
+                    <span class="report-icon">📥</span>
+                    <span class="report-name">Accounts Receivable Aging</span>
+                    <span class="report-desc">Outstanding customer invoices by age</span>
+                </a>
+                <a href="/reports/ap-aging" class="report-card">
+                    <span class="report-icon">📤</span>
+                    <span class="report-name">Accounts Payable Aging</span>
+                    <span class="report-desc">Outstanding vendor bills by age</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="report-category">
+            <h3 class="category-title">💰 Transaction Reports</h3>
+            <div class="report-cards">
+                <a href="/reports/sales" class="report-card">
+                    <span class="report-icon">🛒</span>
+                    <span class="report-name">Sales Report</span>
+                    <span class="report-desc">Revenue by customer, product, and period</span>
+                </a>
+                <a href="/reports/expenses" class="report-card">
+                    <span class="report-icon">💸</span>
+                    <span class="report-name">Expense Report</span>
+                    <span class="report-desc">Expenses by vendor, category, and period</span>
+                </a>
+                <a href="/reports/tax-summary" class="report-card">
+                    <span class="report-icon">🏛️</span>
+                    <span class="report-name">Tax Summary</span>
+                    <span class="report-desc">Tax collected and paid summary</span>
+                </a>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    @* Report Filters *@
+    <Card CssClass="mb-4">
+        <ChildContent>
+            <div class="report-filters">
+                @if (ReportType == "balance-sheet" || ReportType == "trial-balance" || 
+                     ReportType == "ar-aging" || ReportType == "ap-aging")
+                {
+                    <div class="filter-group">
+                        <label>As of Date</label>
+                        <input type="date" class="form-control" @bind="asOfDate" />
+                    </div>
+                }
+                else
+                {
+                    <div class="filter-group">
+                        <label>Start Date</label>
+                        <input type="date" class="form-control" @bind="startDate" />
+                    </div>
+                    <div class="filter-group">
+                        <label>End Date</label>
+                        <input type="date" class="form-control" @bind="endDate" />
+                    </div>
+                }
+                
+                @if (ReportType == "general-ledger")
+                {
+                    <div class="filter-group">
+                        <label>Account (Optional)</label>
+                        <select class="form-control" @bind="selectedAccountId">
+                            <option value="">All Accounts</option>
+                            @foreach (var account in accounts)
+                            {
+                                <option value="@account.Id">@account.AccountNumber - @account.Name</option>
+                            }
+                        </select>
+                    </div>
+                }
+                
+                <button class="btn btn-primary" @onclick="LoadReportAsync">
+                    Run Report
+                </button>
+            </div>
+        </ChildContent>
+    </Card>
+
+    @* Report Content *@
+    @switch (ReportType)
+    {
+        case "profit-loss":
+            @RenderProfitLoss()
+            break;
+        case "balance-sheet":
+            @RenderBalanceSheet()
+            break;
+        case "trial-balance":
+            @RenderTrialBalance()
+            break;
+        case "cash-flow":
+            @RenderCashFlow()
+            break;
+        case "general-ledger":
+            @RenderGeneralLedger()
+            break;
+        case "ar-aging":
+            @RenderAgingReport(true)
+            break;
+        case "ap-aging":
+            @RenderAgingReport(false)
+            break;
+        case "sales":
+            @RenderSalesReport()
+            break;
+        case "expenses":
+            @RenderExpenseReport()
+            break;
+        case "tax-summary":
+            @RenderTaxSummary()
+            break;
+    }
+}
+
+@* Profit & Loss Report *@
+@{
+    RenderFragment RenderProfitLoss() => __builder =>
+    {
+        if (profitLossReport == null) return;
+        
+        <Card Title="Income" CssClass="mb-4">
+            <ChildContent>
+                @foreach (var grp in profitLossReport.IncomeSections)
+                {
+                    <div class="report-group">
+                        <div class="group-header">@grp.Name</div>
+                        @foreach (var item in grp.Items)
+                        {
+                            <div class="report-row">
+                                <span class="row-label">@item.AccountNumber @item.AccountName</span>
+                                <span class="row-value">@item.Amount.ToString("C2")</span>
+                            </div>
+                        }
+                        <div class="report-row subtotal">
+                            <span class="row-label">Total @grp.Name</span>
+                            <span class="row-value">@grp.Total.ToString("C2")</span>
+                        </div>
+                    </div>
+                }
+                <div class="report-row total">
+                    <span class="row-label">Total Income</span>
+                    <span class="row-value">@profitLossReport.TotalIncome.ToString("C2")</span>
+                </div>
+            </ChildContent>
+        </Card>
+
+        <Card Title="Cost of Goods Sold" CssClass="mb-4">
+            <ChildContent>
+                @foreach (var grp in profitLossReport.ExpenseSections.Where(s => s.IsCOGS))
+                {
+                    @foreach (var item in grp.Items)
+                    {
+                        <div class="report-row">
+                            <span class="row-label">@item.AccountNumber @item.AccountName</span>
+                            <span class="row-value">@item.Amount.ToString("C2")</span>
+                        </div>
+                    }
+                }
+                <div class="report-row total">
+                    <span class="row-label">Total COGS</span>
+                    <span class="row-value">@profitLossReport.TotalCOGS.ToString("C2")</span>
+                </div>
+                <div class="report-row highlight">
+                    <span class="row-label">Gross Profit</span>
+                    <span class="row-value">@profitLossReport.GrossProfit.ToString("C2") (@profitLossReport.GrossMarginPercent.ToString("N1")%)</span>
+                </div>
+            </ChildContent>
+        </Card>
+
+        <Card Title="Operating Expenses" CssClass="mb-4">
+            <ChildContent>
+                @foreach (var grp in profitLossReport.ExpenseSections.Where(s => !s.IsCOGS))
+                {
+                    <div class="report-group">
+                        <div class="group-header">@grp.Name</div>
+                        @foreach (var item in grp.Items)
+                        {
+                            <div class="report-row">
+                                <span class="row-label">@item.AccountNumber @item.AccountName</span>
+                                <span class="row-value">@item.Amount.ToString("C2")</span>
+                            </div>
+                        }
+                        <div class="report-row subtotal">
+                            <span class="row-label">Total @grp.Name</span>
+                            <span class="row-value">@grp.Total.ToString("C2")</span>
+                        </div>
+                    </div>
+                }
+                <div class="report-row total">
+                    <span class="row-label">Total Operating Expenses</span>
+                    <span class="row-value">@profitLossReport.TotalOperatingExpenses.ToString("C2")</span>
+                </div>
+            </ChildContent>
+        </Card>
+
+        <Card CssClass="net-income-card">
+            <ChildContent>
+                <div class="report-row grand-total @(profitLossReport.NetIncome >= 0 ? "positive" : "negative")">
+                    <span class="row-label">Net Income</span>
+                    <span class="row-value">@profitLossReport.NetIncome.ToString("C2") (@profitLossReport.NetMarginPercent.ToString("N1")%)</span>
+                </div>
+            </ChildContent>
+        </Card>
+    };
+}
+
+@* Balance Sheet Report *@
+@{
+    RenderFragment RenderBalanceSheet() => __builder =>
+    {
+        if (balanceSheetReport == null) return;
+        
+        <div class="balance-sheet-grid">
+            <Card Title="Assets">
+                <ChildContent>
+                    @foreach (var grp in balanceSheetReport.AssetSections)
+                    {
+                        <div class="report-group">
+                            <div class="group-header">@grp.Name</div>
+                            @foreach (var item in grp.Items)
+                            {
+                                <div class="report-row">
+                                    <span class="row-label">@item.AccountNumber @item.AccountName</span>
+                                    <span class="row-value">@item.Balance.ToString("C2")</span>
+                                </div>
+                            }
+                            <div class="report-row subtotal">
+                                <span class="row-label">Total @grp.Name</span>
+                                <span class="row-value">@grp.Total.ToString("C2")</span>
+                            </div>
+                        </div>
+                    }
+                    <div class="report-row total">
+                        <span class="row-label">Total Assets</span>
+                        <span class="row-value">@balanceSheetReport.TotalAssets.ToString("C2")</span>
+                    </div>
+                </ChildContent>
+            </Card>
+
+            <div>
+                <Card Title="Liabilities" CssClass="mb-4">
+                    <ChildContent>
+                        @foreach (var grp in balanceSheetReport.LiabilitySections)
+                        {
+                            <div class="report-group">
+                                <div class="group-header">@grp.Name</div>
+                                @foreach (var item in grp.Items)
+                                {
+                                    <div class="report-row">
+                                        <span class="row-label">@item.AccountNumber @item.AccountName</span>
+                                        <span class="row-value">@item.Balance.ToString("C2")</span>
+                                    </div>
+                                }
+                                <div class="report-row subtotal">
+                                    <span class="row-label">Total @grp.Name</span>
+                                    <span class="row-value">@grp.Total.ToString("C2")</span>
+                                </div>
+                            </div>
+                        }
+                        <div class="report-row total">
+                            <span class="row-label">Total Liabilities</span>
+                            <span class="row-value">@balanceSheetReport.TotalLiabilities.ToString("C2")</span>
+                        </div>
+                    </ChildContent>
+                </Card>
+
+                <Card Title="Equity">
+                    <ChildContent>
+                        @foreach (var grp in balanceSheetReport.EquitySections)
+                        {
+                            <div class="report-group">
+                                <div class="group-header">@grp.Name</div>
+                                @foreach (var item in grp.Items)
+                                {
+                                    <div class="report-row">
+                                        <span class="row-label">@item.AccountName</span>
+                                        <span class="row-value">@item.Balance.ToString("C2")</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        <div class="report-row total">
+                            <span class="row-label">Total Equity</span>
+                            <span class="row-value">@balanceSheetReport.TotalEquity.ToString("C2")</span>
+                        </div>
+                        <div class="report-row grand-total">
+                            <span class="row-label">Total Liabilities & Equity</span>
+                            <span class="row-value">@balanceSheetReport.LiabilitiesAndEquity.ToString("C2")</span>
+                        </div>
+                        @if (!balanceSheetReport.IsBalanced)
+                        {
+                            <div class="alert alert-warning mt-3">
+                                ⚠️ Balance sheet is out of balance by @((balanceSheetReport.TotalAssets - balanceSheetReport.LiabilitiesAndEquity).ToString("C2"))
+                            </div>
+                        }
+                    </ChildContent>
+                </Card>
+            </div>
+        </div>
+    };
+}
+
+@* Trial Balance Report *@
+@{
+    RenderFragment RenderTrialBalance() => __builder =>
+    {
+        if (trialBalanceReport == null) return;
+        
+        <Card>
+            <ChildContent>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Account #</th>
+                            <th>Account Name</th>
+                            <th>Type</th>
+                            <th class="text-right">Debit</th>
+                            <th class="text-right">Credit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in trialBalanceReport.Items)
+                        {
+                            <tr>
+                                <td class="font-mono">@item.AccountNumber</td>
+                                <td>@item.AccountName</td>
+                                <td><span class="badge badge-info">@item.AccountType</span></td>
+                                <td class="text-right font-mono">@(item.Debit > 0 ? item.Debit.ToString("N2") : "")</td>
+                                <td class="text-right font-mono">@(item.Credit > 0 ? item.Credit.ToString("N2") : "")</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr class="total-row">
+                            <td colspan="3"><strong>Totals</strong></td>
+                            <td class="text-right font-mono"><strong>@trialBalanceReport.TotalDebits.ToString("N2")</strong></td>
+                            <td class="text-right font-mono"><strong>@trialBalanceReport.TotalCredits.ToString("N2")</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+                @if (trialBalanceReport.IsBalanced)
+                {
+                    <div class="alert alert-success mt-3">✓ Trial balance is in balance</div>
+                }
+                else
+                {
+                    <div class="alert alert-danger mt-3">⚠️ Trial balance is out of balance</div>
+                }
+            </ChildContent>
+        </Card>
+    };
+}
+
+@* Cash Flow Report *@
+@{
+    RenderFragment RenderCashFlow() => __builder =>
+    {
+        if (cashFlowReport == null) return;
+        
+        <Card Title="Operating Activities" CssClass="mb-4">
+            <ChildContent>
+                @foreach (var grp in cashFlowReport.OperatingActivities)
+                {
+                    @foreach (var item in grp.Items)
+                    {
+                        <div class="report-row">
+                            <span class="row-label">@item.Description</span>
+                            <span class="row-value @(item.Amount >= 0 ? "" : "negative")">@item.Amount.ToString("C2")</span>
+                        </div>
+                    }
+                }
+                <div class="report-row total">
+                    <span class="row-label">Net Cash from Operating Activities</span>
+                    <span class="row-value">@cashFlowReport.NetOperatingCashFlow.ToString("C2")</span>
+                </div>
+            </ChildContent>
+        </Card>
+
+        <Card Title="Investing Activities" CssClass="mb-4">
+            <ChildContent>
+                @foreach (var grp in cashFlowReport.InvestingActivities)
+                {
+                    @foreach (var item in grp.Items)
+                    {
+                        <div class="report-row">
+                            <span class="row-label">@item.Description</span>
+                            <span class="row-value @(item.Amount >= 0 ? "" : "negative")">@item.Amount.ToString("C2")</span>
+                        </div>
+                    }
+                }
+                <div class="report-row total">
+                    <span class="row-label">Net Cash from Investing Activities</span>
+                    <span class="row-value">@cashFlowReport.NetInvestingCashFlow.ToString("C2")</span>
+                </div>
+            </ChildContent>
+        </Card>
+
+        <Card Title="Financing Activities" CssClass="mb-4">
+            <ChildContent>
+                @foreach (var grp in cashFlowReport.FinancingActivities)
+                {
+                    @foreach (var item in grp.Items)
+                    {
+                        <div class="report-row">
+                            <span class="row-label">@item.Description</span>
+                            <span class="row-value @(item.Amount >= 0 ? "" : "negative")">@item.Amount.ToString("C2")</span>
+                        </div>
+                    }
+                }
+                <div class="report-row total">
+                    <span class="row-label">Net Cash from Financing Activities</span>
+                    <span class="row-value">@cashFlowReport.NetFinancingCashFlow.ToString("C2")</span>
+                </div>
+            </ChildContent>
+        </Card>
+
+        <Card>
+            <ChildContent>
+                <div class="report-row">
+                    <span class="row-label">Beginning Cash Balance</span>
+                    <span class="row-value">@cashFlowReport.BeginningCash.ToString("C2")</span>
+                </div>
+                <div class="report-row">
+                    <span class="row-label">Net Change in Cash</span>
+                    <span class="row-value @(cashFlowReport.NetCashChange >= 0 ? "positive" : "negative")">@cashFlowReport.NetCashChange.ToString("C2")</span>
+                </div>
+                <div class="report-row grand-total">
+                    <span class="row-label">Ending Cash Balance</span>
+                    <span class="row-value">@cashFlowReport.EndingCash.ToString("C2")</span>
+                </div>
+            </ChildContent>
+        </Card>
+    };
+}
+
+@* General Ledger Report *@
+@{
+    RenderFragment RenderGeneralLedger() => __builder =>
+    {
+        if (generalLedgerReport == null) return;
+        
+        @foreach (var account in generalLedgerReport.Accounts)
+        {
+            <Card Title="@($"{account.AccountNumber} - {account.AccountName}")" CssClass="mb-4">
+                <HeaderContent>
+                    <span class="badge badge-info">@account.AccountType</span>
+                </HeaderContent>
+                <ChildContent>
+                    @if (account.Transactions.Any())
+                    {
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 100px;">Date</th>
+                                    <th style="width: 100px;">Reference</th>
+                                    <th>Description</th>
+                                    <th class="text-right" style="width: 100px;">Debit</th>
+                                    <th class="text-right" style="width: 100px;">Credit</th>
+                                    <th class="text-right" style="width: 120px;">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="opening-balance">
+                                    <td colspan="5">Opening Balance</td>
+                                    <td class="text-right font-mono">@account.OpeningBalance.ToString("N2")</td>
+                                </tr>
+                                @foreach (var trans in account.Transactions)
+                                {
+                                    <tr>
+                                        <td>@trans.Date.ToString("MM/dd/yyyy")</td>
+                                        <td class="font-mono">@trans.Reference</td>
+                                        <td>@trans.Description</td>
+                                        <td class="text-right font-mono">@(trans.Debit > 0 ? trans.Debit.ToString("N2") : "")</td>
+                                        <td class="text-right font-mono">@(trans.Credit > 0 ? trans.Credit.ToString("N2") : "")</td>
+                                        <td class="text-right font-mono">@trans.Balance.ToString("N2")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot>
+                                <tr class="total-row">
+                                    <td colspan="3"><strong>Totals / Closing Balance</strong></td>
+                                    <td class="text-right font-mono"><strong>@account.TotalDebits.ToString("N2")</strong></td>
+                                    <td class="text-right font-mono"><strong>@account.TotalCredits.ToString("N2")</strong></td>
+                                    <td class="text-right font-mono"><strong>@account.ClosingBalance.ToString("N2")</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    }
+                    else
+                    {
+                        <div class="empty-state p-4">No transactions in this period</div>
+                    }
+                </ChildContent>
+            </Card>
+        }
+    };
+}
+
+@* Aging Report *@
+@{
+    RenderFragment RenderAgingReport(bool isReceivables) => __builder =>
+    {
+        if (agingReport == null) return;
+        
+        <Card>
+            <ChildContent>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>@(isReceivables ? "Customer" : "Vendor")</th>
+                            <th class="text-right">Current</th>
+                            <th class="text-right">1-30 Days</th>
+                            <th class="text-right">31-60 Days</th>
+                            <th class="text-right">61-90 Days</th>
+                            <th class="text-right">90+ Days</th>
+                            <th class="text-right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entity in agingReport.Entities)
+                        {
+                            <tr>
+                                <td><strong>@entity.Name</strong></td>
+                                <td class="text-right font-mono">@(entity.Current > 0 ? entity.Current.ToString("N2") : "-")</td>
+                                <td class="text-right font-mono">@(entity.Days1To30 > 0 ? entity.Days1To30.ToString("N2") : "-")</td>
+                                <td class="text-right font-mono">@(entity.Days31To60 > 0 ? entity.Days31To60.ToString("N2") : "-")</td>
+                                <td class="text-right font-mono">@(entity.Days61To90 > 0 ? entity.Days61To90.ToString("N2") : "-")</td>
+                                <td class="text-right font-mono text-danger">@(entity.Over90Days > 0 ? entity.Over90Days.ToString("N2") : "-")</td>
+                                <td class="text-right font-mono"><strong>@entity.Total.ToString("N2")</strong></td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr class="total-row">
+                            <td><strong>Totals</strong></td>
+                            <td class="text-right font-mono"><strong>@agingReport.TotalCurrent.ToString("N2")</strong></td>
+                            <td class="text-right font-mono"><strong>@agingReport.Total1To30.ToString("N2")</strong></td>
+                            <td class="text-right font-mono"><strong>@agingReport.Total31To60.ToString("N2")</strong></td>
+                            <td class="text-right font-mono"><strong>@agingReport.Total61To90.ToString("N2")</strong></td>
+                            <td class="text-right font-mono text-danger"><strong>@agingReport.TotalOver90.ToString("N2")</strong></td>
+                            <td class="text-right font-mono"><strong>@agingReport.GrandTotal.ToString("N2")</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </ChildContent>
+        </Card>
+    };
+}
+
+@* Sales Report *@
+@{
+    RenderFragment RenderSalesReport() => __builder =>
+    {
+        if (salesReport == null) return;
+        
+        <div class="report-summary mb-4">
+            <div class="summary-card">
+                <div class="summary-value">@salesReport.TotalSales.ToString("C2")</div>
+                <div class="summary-label">Total Sales</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-value">@salesReport.InvoiceCount</div>
+                <div class="summary-label">Invoices</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-value">@salesReport.CustomerCount</div>
+                <div class="summary-label">Customers</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-value">@salesReport.TotalTax.ToString("C2")</div>
+                <div class="summary-label">Tax Collected</div>
+            </div>
+        </div>
+
+        <div class="report-grid">
+            <Card Title="Sales by Customer">
+                <ChildContent>
+                    @foreach (var item in salesReport.ByCustomer.Take(10))
+                    {
+                        <div class="report-row">
+                            <span class="row-label">@item.CustomerName</span>
+                            <span class="row-value">@item.Amount.ToString("C2") (@item.Percentage.ToString("N1")%)</span>
+                        </div>
+                    }
+                </ChildContent>
+            </Card>
+
+            <Card Title="Sales by Product">
+                <ChildContent>
+                    @foreach (var item in salesReport.ByProduct.Take(10))
+                    {
+                        <div class="report-row">
+                            <span class="row-label">@item.ProductName</span>
+                            <span class="row-value">@item.Amount.ToString("C2") (@item.Percentage.ToString("N1")%)</span>
+                        </div>
+                    }
+                </ChildContent>
+            </Card>
+        </div>
+    };
+}
+
+@* Expense Report *@
+@{
+    RenderFragment RenderExpenseReport() => __builder =>
+    {
+        if (expenseReport == null) return;
+        
+        <div class="report-summary mb-4">
+            <div class="summary-card">
+                <div class="summary-value">@expenseReport.TotalExpenses.ToString("C2")</div>
+                <div class="summary-label">Total Expenses</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-value">@expenseReport.BillCount</div>
+                <div class="summary-label">Bills</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-value">@expenseReport.VendorCount</div>
+                <div class="summary-label">Vendors</div>
+            </div>
+        </div>
+
+        <div class="report-grid">
+            <Card Title="Expenses by Vendor">
+                <ChildContent>
+                    @foreach (var item in expenseReport.ByVendor.Take(10))
+                    {
+                        <div class="report-row">
+                            <span class="row-label">@item.VendorName</span>
+                            <span class="row-value">@item.Amount.ToString("C2") (@item.Percentage.ToString("N1")%)</span>
+                        </div>
+                    }
+                </ChildContent>
+            </Card>
+
+            <Card Title="Expenses by Category">
+                <ChildContent>
+                    @foreach (var item in expenseReport.ByCategory.Take(10))
+                    {
+                        <div class="report-row">
+                            <span class="row-label">@item.AccountName</span>
+                            <span class="row-value">@item.Amount.ToString("C2") (@item.Percentage.ToString("N1")%)</span>
+                        </div>
+                    }
+                </ChildContent>
+            </Card>
+        </div>
+    };
+}
+
+@* Tax Summary Report *@
+@{
+    RenderFragment RenderTaxSummary() => __builder =>
+    {
+        if (taxSummaryReport == null) return;
+        
+        <Card>
+            <ChildContent>
+                <div class="report-row">
+                    <span class="row-label">Taxable Sales</span>
+                    <span class="row-value">@taxSummaryReport.TaxableIncome.ToString("C2")</span>
+                </div>
+                <div class="report-row">
+                    <span class="row-label">Tax Collected</span>
+                    <span class="row-value positive">@taxSummaryReport.TaxCollected.ToString("C2")</span>
+                </div>
+                <div class="report-row">
+                    <span class="row-label">Tax Paid (on Purchases)</span>
+                    <span class="row-value negative">@taxSummaryReport.TaxPaid.ToString("C2")</span>
+                </div>
+                <div class="report-row grand-total @(taxSummaryReport.NetTaxLiability >= 0 ? "" : "negative")">
+                    <span class="row-label">Net Tax Liability</span>
+                    <span class="row-value">@taxSummaryReport.NetTaxLiability.ToString("C2")</span>
+                </div>
+            </ChildContent>
+        </Card>
+    };
+}
+
+<style>
+    .reports-grid {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-6);
+    }
+
+    .report-category { }
+
+    .category-title {
+        font-size: var(--text-lg);
+        font-weight: var(--font-semibold);
+        margin-bottom: var(--space-3);
+        color: var(--text-primary);
+    }
+
+    .report-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: var(--space-4);
+    }
+
+    .report-card {
+        display: flex;
+        flex-direction: column;
+        padding: var(--space-4);
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.2s;
+    }
+
+    .report-card:hover {
+        border-color: var(--primary-color);
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+
+    .report-icon {
+        font-size: var(--text-2xl);
+        margin-bottom: var(--space-2);
+    }
+
+    .report-name {
+        font-weight: var(--font-semibold);
+        font-size: var(--text-base);
+        margin-bottom: var(--space-1);
+    }
+
+    .report-desc {
+        font-size: var(--text-sm);
+        color: var(--text-muted);
+    }
+
+    .report-filters {
+        display: flex;
+        gap: var(--space-4);
+        align-items: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-1);
+    }
+
+    .filter-group label {
+        font-size: var(--text-sm);
+        font-weight: var(--font-medium);
+        color: var(--text-secondary);
+    }
+
+    .report-group {
+        margin-bottom: var(--space-4);
+    }
+
+    .group-header {
+        font-weight: var(--font-semibold);
+        color: var(--text-secondary);
+        font-size: var(--text-sm);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: var(--space-2);
+        padding-bottom: var(--space-1);
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .report-row {
+        display: flex;
+        justify-content: space-between;
+        padding: var(--space-2) 0;
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .report-row.subtotal {
+        font-weight: var(--font-medium);
+        background: var(--bg-secondary);
+        margin: 0 calc(-1 * var(--space-4));
+        padding: var(--space-2) var(--space-4);
+    }
+
+    .report-row.total {
+        font-weight: var(--font-semibold);
+        font-size: var(--text-base);
+        border-top: 2px solid var(--border-color);
+        border-bottom: none;
+        padding-top: var(--space-3);
+        margin-top: var(--space-2);
+    }
+
+    .report-row.grand-total {
+        font-weight: var(--font-bold);
+        font-size: var(--text-lg);
+        background: var(--bg-tertiary);
+        margin: var(--space-3) calc(-1 * var(--space-4)) calc(-1 * var(--space-4));
+        padding: var(--space-4);
+        border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    }
+
+    .report-row.highlight {
+        background: var(--primary-light);
+        margin: var(--space-2) calc(-1 * var(--space-4));
+        padding: var(--space-3) var(--space-4);
+        font-weight: var(--font-semibold);
+    }
+
+    .row-value {
+        font-family: var(--font-mono);
+    }
+
+    .row-value.positive { color: var(--success-color); }
+    .row-value.negative { color: var(--danger-color); }
+
+    .balance-sheet-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-4);
+    }
+
+    .report-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: var(--space-4);
+    }
+
+    .report-summary .summary-card {
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: var(--space-4);
+        text-align: center;
+    }
+
+    .summary-value {
+        font-size: var(--text-2xl);
+        font-weight: var(--font-bold);
+        font-family: var(--font-mono);
+    }
+
+    .summary-label {
+        font-size: var(--text-sm);
+        color: var(--text-muted);
+        margin-top: var(--space-1);
+    }
+
+    .report-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: var(--space-4);
+    }
+
+    .total-row {
+        background: var(--bg-tertiary);
+        font-weight: var(--font-semibold);
+    }
+
+    .opening-balance {
+        background: var(--bg-secondary);
+        font-style: italic;
+    }
+
+    .net-income-card {
+        background: var(--bg-tertiary);
+    }
+
+    .net-income-card .grand-total.positive {
+        color: var(--success-color);
+    }
+
+    .net-income-card .grand-total.negative {
+        color: var(--danger-color);
+    }
+
+    @@media (max-width: 768px) {
+        .balance-sheet-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string? ReportType { get; set; }
+
+    // State
+    private bool isLoading = false;
+    private bool isExporting = false;
+    private string? errorMessage;
+
+    // Filters
+    private DateTime startDate = new DateTime(DateTime.Today.Year, 1, 1);
+    private DateTime endDate = DateTime.Today;
+    private DateTime asOfDate = DateTime.Today;
+    private int? selectedAccountId;
+
+    // Data
+    private List<Account> accounts = new();
+    private ProfitLossReport? profitLossReport;
+    private BalanceSheetReport? balanceSheetReport;
+    private TrialBalanceReport? trialBalanceReport;
+    private CashFlowReport? cashFlowReport;
+    private GeneralLedgerReport? generalLedgerReport;
+    private AgingReport? agingReport;
+    private SalesReport? salesReport;
+    private ExpenseReport? expenseReport;
+    private TaxSummaryReport? taxSummaryReport;
+
+    protected override async Task OnInitializedAsync()
+    {
+        accounts = (await AccountService.GetActiveAccountsAsync()).ToList();
+        
+        if (!string.IsNullOrEmpty(ReportType))
+        {
+            await LoadReportAsync();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrEmpty(ReportType))
+        {
+            await LoadReportAsync();
+        }
+    }
+
+    private async Task LoadReportAsync()
+    {
+        if (string.IsNullOrEmpty(ReportType)) return;
+
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            switch (ReportType)
+            {
+                case "profit-loss":
+                    profitLossReport = await ReportService.GetProfitLossAsync(startDate, endDate);
+                    break;
+                case "balance-sheet":
+                    balanceSheetReport = await ReportService.GetBalanceSheetAsync(asOfDate);
+                    break;
+                case "trial-balance":
+                    trialBalanceReport = await ReportService.GetTrialBalanceAsync(asOfDate);
+                    break;
+                case "cash-flow":
+                    cashFlowReport = await ReportService.GetCashFlowAsync(startDate, endDate);
+                    break;
+                case "general-ledger":
+                    generalLedgerReport = await ReportService.GetGeneralLedgerAsync(startDate, endDate, selectedAccountId);
+                    break;
+                case "ar-aging":
+                    agingReport = await ReportService.GetReceivablesAgingAsync(asOfDate);
+                    break;
+                case "ap-aging":
+                    agingReport = await ReportService.GetPayablesAgingAsync(asOfDate);
+                    break;
+                case "sales":
+                    salesReport = await ReportService.GetSalesReportAsync(startDate, endDate);
+                    break;
+                case "expenses":
+                    expenseReport = await ReportService.GetExpenseReportAsync(startDate, endDate);
+                    break;
+                case "tax-summary":
+                    taxSummaryReport = await ReportService.GetTaxSummaryAsync(startDate, endDate);
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading report: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void BackToReports()
+    {
+        ReportType = null;
+        StateHasChanged();
+    }
+
+    private async Task ExportReport()
+    {
+        isExporting = true;
+        try
+        {
+            // PDF export would be implemented here
+            await Task.Delay(500); // Simulate export
+        }
+        finally
+        {
+            isExporting = false;
+        }
+    }
+
+    private string GetPageTitle() => ReportType switch
+    {
+        "profit-loss" => "Profit & Loss Statement",
+        "balance-sheet" => "Balance Sheet",
+        "trial-balance" => "Trial Balance",
+        "cash-flow" => "Cash Flow Statement",
+        "general-ledger" => "General Ledger",
+        "ar-aging" => "Accounts Receivable Aging",
+        "ap-aging" => "Accounts Payable Aging",
+        "sales" => "Sales Report",
+        "expenses" => "Expense Report",
+        "tax-summary" => "Tax Summary",
+        _ => "Reports"
+    };
+
+    private string GetPageSubtitle() => ReportType switch
+    {
+        "profit-loss" => $"{startDate:MMM d, yyyy} - {endDate:MMM d, yyyy}",
+        "balance-sheet" => $"As of {asOfDate:MMM d, yyyy}",
+        "trial-balance" => $"As of {asOfDate:MMM d, yyyy}",
+        "cash-flow" => $"{startDate:MMM d, yyyy} - {endDate:MMM d, yyyy}",
+        "general-ledger" => $"{startDate:MMM d, yyyy} - {endDate:MMM d, yyyy}",
+        "ar-aging" => $"As of {asOfDate:MMM d, yyyy}",
+        "ap-aging" => $"As of {asOfDate:MMM d, yyyy}",
+        "sales" => $"{startDate:MMM d, yyyy} - {endDate:MMM d, yyyy}",
+        "expenses" => $"{startDate:MMM d, yyyy} - {endDate:MMM d, yyyy}",
+        "tax-summary" => $"{startDate:MMM d, yyyy} - {endDate:MMM d, yyyy}",
+        _ => "View and generate financial reports"
+    };
+}

@@ -80,6 +80,9 @@ public static class ServiceCollectionExtensions
         
         // Bank service
         services.AddScoped<IBankService, BankService>();
+        
+        // Report service
+        services.AddScoped<IReportService, ReportService>();
 
         return services;
     }
