@@ -1,0 +1,563 @@
+@page "/settings"
+@inject ICompanyService CompanyService
+
+<PageHeader Title="Company Settings" Subtitle="Manage your business profile and preferences" />
+
+@if (isLoading)
+{
+    <LoadingSpinner Text="Loading company settings..." />
+}
+else if (company != null)
+{
+    <div class="settings-container">
+        @if (showSuccessMessage)
+        {
+            <div class="alert alert-success mb-4">
+                <span>✓</span> Company settings saved successfully!
+            </div>
+        }
+
+        <div class="tabs">
+            <button class="tab @(activeTab == "profile" ? "active" : "")" @onclick="@(() => SetActiveTab("profile"))">
+                Business Profile
+            </button>
+            <button class="tab @(activeTab == "financial" ? "active" : "")" @onclick="@(() => SetActiveTab("financial"))">
+                Financial Settings
+            </button>
+            <button class="tab @(activeTab == "invoicing" ? "active" : "")" @onclick="@(() => SetActiveTab("invoicing"))">
+                Invoicing
+            </button>
+            <button class="tab @(activeTab == "branding" ? "active" : "")" @onclick="@(() => SetActiveTab("branding"))">
+                Branding
+            </button>
+        </div>
+
+        <EditForm Model="company" OnValidSubmit="SaveCompanyAsync">
+            <DataAnnotationsValidator />
+            
+            @* Business Profile Tab *@
+            <div class="tab-content @(activeTab == "profile" ? "active" : "")">
+                <Card Title="Business Information">
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label form-label-required">Company Name</label>
+                            <InputText @bind-Value="company.Name" class="form-control" placeholder="Enter company name" />
+                            <ValidationMessage For="() => company.Name" />
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">Legal Name</label>
+                            <InputText @bind-Value="company.LegalName" class="form-control" placeholder="Legal business name (if different)" />
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">DBA (Doing Business As)</label>
+                            <InputText @bind-Value="company.DbaName" class="form-control" placeholder="Trade name" />
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">Tax ID / EIN</label>
+                            <InputText @bind-Value="company.TaxId" class="form-control" placeholder="XX-XXXXXXX" />
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">Business Type</label>
+                            <InputSelect @bind-Value="company.BusinessType" class="form-control">
+                                @foreach (var type in Enum.GetValues<BusinessType>())
+                                {
+                                    <option value="@type">@FormatEnumName(type.ToString())</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">Industry</label>
+                            <InputSelect @bind-Value="company.Industry" class="form-control">
+                                @foreach (var industry in Enum.GetValues<IndustryType>().OrderBy(i => i.ToString()))
+                                {
+                                    <option value="@industry">@FormatEnumName(industry.ToString())</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Business Description</label>
+                        <InputTextArea @bind-Value="company.Description" class="form-control" rows="3" 
+                            placeholder="Brief description of your business" />
+                    </div>
+                </Card>
+
+                <Card Title="Business Address" CssClass="mt-4">
+                    <div class="form-group">
+                        <label class="form-label">Address Line 1</label>
+                        <InputText @bind-Value="company.Address1" class="form-control" placeholder="Street address" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Address Line 2</label>
+                        <InputText @bind-Value="company.Address2" class="form-control" placeholder="Suite, unit, building, floor, etc." />
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">City</label>
+                            <InputText @bind-Value="company.City" class="form-control" placeholder="City" />
+                        </div>
+                        <div class="form-group" style="width: 150px;">
+                            <label class="form-label">State</label>
+                            <InputText @bind-Value="company.State" class="form-control" placeholder="State" />
+                        </div>
+                        <div class="form-group" style="width: 150px;">
+                            <label class="form-label">ZIP Code</label>
+                            <InputText @bind-Value="company.PostalCode" class="form-control" placeholder="ZIP" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Country</label>
+                        <InputText @bind-Value="company.Country" class="form-control" placeholder="Country" />
+                    </div>
+                </Card>
+
+                <Card Title="Contact Information" CssClass="mt-4">
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">Phone</label>
+                            <InputText @bind-Value="company.Phone" class="form-control" placeholder="(555) 555-5555" />
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">Fax</label>
+                            <InputText @bind-Value="company.Fax" class="form-control" placeholder="(555) 555-5555" />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">Email</label>
+                            <InputText @bind-Value="company.Email" class="form-control" type="email" placeholder="info@company.com" />
+                            <ValidationMessage For="() => company.Email" />
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">Website</label>
+                            <InputText @bind-Value="company.Website" class="form-control" placeholder="https://www.company.com" />
+                            <ValidationMessage For="() => company.Website" />
+                        </div>
+                    </div>
+                </Card>
+            </div>
+
+            @* Financial Settings Tab *@
+            <div class="tab-content @(activeTab == "financial" ? "active" : "")">
+                <Card Title="Accounting Preferences">
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">Accounting Method</label>
+                            <InputSelect @bind-Value="company.AccountingMethod" class="form-control">
+                                <option value="@AccountingMethod.Accrual">Accrual</option>
+                                <option value="@AccountingMethod.Cash">Cash</option>
+                            </InputSelect>
+                            <span class="form-text">
+                                @(company.AccountingMethod == AccountingMethod.Accrual 
+                                    ? "Record income when earned and expenses when incurred" 
+                                    : "Record income when received and expenses when paid")
+                            </span>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">Inventory Method</label>
+                            <InputSelect @bind-Value="company.InventoryMethod" class="form-control">
+                                <option value="@InventoryMethod.FIFO">FIFO (First In, First Out)</option>
+                                <option value="@InventoryMethod.LIFO">LIFO (Last In, First Out)</option>
+                                <option value="@InventoryMethod.AverageCost">Average Cost</option>
+                            </InputSelect>
+                        </div>
+                    </div>
+                </Card>
+
+                <Card Title="Fiscal Year" CssClass="mt-4">
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">Fiscal Year Start Month</label>
+                            <InputSelect @bind-Value="company.FiscalYearStartMonth" class="form-control">
+                                <option value="1">January</option>
+                                <option value="2">February</option>
+                                <option value="3">March</option>
+                                <option value="4">April</option>
+                                <option value="5">May</option>
+                                <option value="6">June</option>
+                                <option value="7">July</option>
+                                <option value="8">August</option>
+                                <option value="9">September</option>
+                                <option value="10">October</option>
+                                <option value="11">November</option>
+                                <option value="12">December</option>
+                            </InputSelect>
+                            <span class="form-text">Fiscal Year: @company.FiscalYearDisplay</span>
+                        </div>
+                        <div class="form-group flex-1">
+                            <div class="form-check mt-4">
+                                <InputCheckbox @bind-Value="company.TaxYearSameAsFiscal" class="form-check-input" id="taxYearSame" />
+                                <label class="form-check-label" for="taxYearSame">Income tax year same as fiscal year</label>
+                            </div>
+                        </div>
+                    </div>
+                </Card>
+
+                <Card Title="Currency & Tax" CssClass="mt-4">
+                    <div class="form-row">
+                        <div class="form-group" style="width: 150px;">
+                            <label class="form-label">Currency</label>
+                            <InputSelect @bind-Value="company.Currency" class="form-control">
+                                <option value="USD">USD - US Dollar</option>
+                                <option value="EUR">EUR - Euro</option>
+                                <option value="GBP">GBP - British Pound</option>
+                                <option value="CAD">CAD - Canadian Dollar</option>
+                                <option value="AUD">AUD - Australian Dollar</option>
+                            </InputSelect>
+                        </div>
+                        <div class="form-group" style="width: 100px;">
+                            <label class="form-label">Symbol</label>
+                            <InputText @bind-Value="company.CurrencySymbol" class="form-control" />
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">Default Tax Rate (%)</label>
+                            <InputNumber @bind-Value="company.DefaultTaxRate" class="form-control" step="0.01" />
+                            <ValidationMessage For="() => company.DefaultTaxRate" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tax Agency Name</label>
+                        <InputText @bind-Value="company.TaxAgencyName" class="form-control" placeholder="e.g., State Tax Board" />
+                    </div>
+                </Card>
+            </div>
+
+            @* Invoicing Tab *@
+            <div class="tab-content @(activeTab == "invoicing" ? "active" : "")">
+                <Card Title="Invoice Numbering">
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">Invoice Number Prefix</label>
+                            <InputText @bind-Value="company.InvoicePrefix" class="form-control" />
+                            <span class="form-text">Example: @(company.InvoicePrefix)@(company.NextInvoiceNumber)</span>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">Next Invoice Number</label>
+                            <InputNumber @bind-Value="company.NextInvoiceNumber" class="form-control" min="1" />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">Bill Number Prefix</label>
+                            <InputText @bind-Value="company.BillPrefix" class="form-control" />
+                            <span class="form-text">Example: @(company.BillPrefix)@(company.NextBillNumber)</span>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">Next Bill Number</label>
+                            <InputNumber @bind-Value="company.NextBillNumber" class="form-control" min="1" />
+                        </div>
+                    </div>
+                </Card>
+
+                <Card Title="Payment Terms" CssClass="mt-4">
+                    <div class="form-group" style="max-width: 300px;">
+                        <label class="form-label">Default Payment Terms (Days)</label>
+                        <InputSelect @bind-Value="company.DefaultPaymentTermsDays" class="form-control">
+                            <option value="0">Due on Receipt</option>
+                            <option value="7">Net 7</option>
+                            <option value="10">Net 10</option>
+                            <option value="15">Net 15</option>
+                            <option value="30">Net 30</option>
+                            <option value="45">Net 45</option>
+                            <option value="60">Net 60</option>
+                            <option value="90">Net 90</option>
+                        </InputSelect>
+                    </div>
+                </Card>
+
+                <Card Title="Default Invoice Content" CssClass="mt-4">
+                    <div class="form-group">
+                        <label class="form-label">Invoice Notes</label>
+                        <InputTextArea @bind-Value="company.InvoiceNotes" class="form-control" rows="3" 
+                            placeholder="Notes that appear on all invoices (e.g., Thank you for your business!)" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Invoice Terms & Conditions</label>
+                        <InputTextArea @bind-Value="company.InvoiceTerms" class="form-control" rows="4" 
+                            placeholder="Payment terms and conditions" />
+                    </div>
+                </Card>
+            </div>
+
+            @* Branding Tab *@
+            <div class="tab-content @(activeTab == "branding" ? "active" : "")">
+                <Card Title="Company Logo">
+                    <div class="logo-section">
+                        <div class="logo-preview">
+                            @if (company.Logo != null && company.Logo.Length > 0)
+                            {
+                                <img src="data:@(company.LogoContentType ?? "image/png");base64,@Convert.ToBase64String(company.Logo)" 
+                                     alt="Company Logo" class="logo-image" />
+                            }
+                            else
+                            {
+                                <div class="logo-placeholder">
+                                    <span class="logo-placeholder-icon">🏢</span>
+                                    <span class="logo-placeholder-text">No logo uploaded</span>
+                                </div>
+                            }
+                        </div>
+                        <div class="logo-actions">
+                            <InputFile OnChange="HandleLogoUpload" accept="image/*" class="d-none" id="logoUpload" />
+                            <label for="logoUpload" class="btn btn-secondary">
+                                📷 Upload Logo
+                            </label>
+                            @if (company.Logo != null)
+                            {
+                                <button type="button" class="btn btn-secondary" @onclick="RemoveLogo">
+                                    🗑️ Remove Logo
+                                </button>
+                            }
+                            <span class="form-text d-block mt-2">Recommended size: 300x100 pixels. Max 2MB.</span>
+                        </div>
+                    </div>
+                </Card>
+
+                <Card Title="Brand Colors" CssClass="mt-4">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Primary Color</label>
+                            <div class="color-picker-group">
+                                <input type="color" @bind="company.PrimaryColor" class="color-picker" />
+                                <InputText @bind-Value="company.PrimaryColor" class="form-control" style="width: 100px;" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Secondary Color</label>
+                            <div class="color-picker-group">
+                                <input type="color" @bind="company.SecondaryColor" class="color-picker" />
+                                <InputText @bind-Value="company.SecondaryColor" class="form-control" style="width: 100px;" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="color-preview mt-4">
+                        <span class="form-text">Preview:</span>
+                        <div class="color-preview-sample" style="background-color: @company.PrimaryColor; color: white;">
+                            Primary Color
+                        </div>
+                        <div class="color-preview-sample" style="background-color: @company.SecondaryColor; color: white;">
+                            Secondary Color
+                        </div>
+                    </div>
+                </Card>
+            </div>
+
+            <div class="form-actions mt-6">
+                <button type="submit" class="btn btn-primary btn-lg" disabled="@isSaving">
+                    @if (isSaving)
+                    {
+                        <span>Saving...</span>
+                    }
+                    else
+                    {
+                        <span>💾 Save Changes</span>
+                    }
+                </button>
+            </div>
+        </EditForm>
+    </div>
+}
+
+<style>
+    .settings-container {
+        max-width: 900px;
+    }
+    
+    .form-row {
+        display: flex;
+        gap: var(--space-4);
+        flex-wrap: wrap;
+    }
+    
+    .form-row .form-group {
+        min-width: 200px;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: var(--space-3);
+        padding-top: var(--space-4);
+        border-top: 1px solid var(--border-color);
+    }
+    
+    .logo-section {
+        display: flex;
+        gap: var(--space-6);
+        align-items: flex-start;
+    }
+    
+    .logo-preview {
+        width: 200px;
+        height: 100px;
+        border: 2px dashed var(--border-color);
+        border-radius: var(--radius-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background-color: var(--bg-secondary);
+    }
+    
+    .logo-image {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+    
+    .logo-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-2);
+        color: var(--text-muted);
+    }
+    
+    .logo-placeholder-icon {
+        font-size: var(--text-3xl);
+        opacity: 0.5;
+    }
+    
+    .logo-placeholder-text {
+        font-size: var(--text-sm);
+    }
+    
+    .logo-actions {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+    }
+    
+    .color-picker-group {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+    }
+    
+    .color-picker {
+        width: 50px;
+        height: 38px;
+        padding: 0;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+    }
+    
+    .color-preview {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+    }
+    
+    .color-preview-sample {
+        padding: var(--space-2) var(--space-4);
+        border-radius: var(--radius-md);
+        font-size: var(--text-sm);
+        font-weight: var(--font-medium);
+    }
+</style>
+
+@code {
+    private Company? company;
+    private bool isLoading = true;
+    private bool isSaving = false;
+    private bool showSuccessMessage = false;
+    private string activeTab = "profile";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            company = await CompanyService.GetCompanyAsync();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SaveCompanyAsync()
+    {
+        if (company == null) return;
+        
+        isSaving = true;
+        showSuccessMessage = false;
+        
+        try
+        {
+            await CompanyService.UpdateCompanyAsync(company);
+            showSuccessMessage = true;
+            
+            // Auto-hide success message after 3 seconds
+            _ = Task.Delay(3000).ContinueWith(_ =>
+            {
+                showSuccessMessage = false;
+                InvokeAsync(StateHasChanged);
+            });
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task HandleLogoUpload(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file == null) return;
+
+        // Validate file size (max 2MB)
+        if (file.Size > 2 * 1024 * 1024)
+        {
+            // TODO: Show error message
+            return;
+        }
+
+        // Validate file type
+        if (!file.ContentType.StartsWith("image/"))
+        {
+            // TODO: Show error message
+            return;
+        }
+
+        using var stream = file.OpenReadStream(maxAllowedSize: 2 * 1024 * 1024);
+        using var memoryStream = new MemoryStream();
+        await stream.CopyToAsync(memoryStream);
+        
+        if (company != null)
+        {
+            company.Logo = memoryStream.ToArray();
+            company.LogoContentType = file.ContentType;
+        }
+    }
+
+    private void RemoveLogo()
+    {
+        if (company != null)
+        {
+            company.Logo = null;
+            company.LogoContentType = null;
+        }
+    }
+
+    private void SetActiveTab(string tab)
+    {
+        activeTab = tab;
+    }
+
+    private string FormatEnumName(string enumName)
+    {
+        // Convert PascalCase to Title Case with spaces
+        return System.Text.RegularExpressions.Regex.Replace(
+            enumName, 
+            "([a-z])([A-Z])", 
+            "$1 $2"
+        );
+    }
+}

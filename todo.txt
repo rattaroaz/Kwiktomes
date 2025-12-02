@@ -1,0 +1,169 @@
+================================================================================
+                        KWIKBOOKS - QuickBooks Clone
+                           Development Roadmap
+================================================================================
+
+Project: .NET MAUI Blazor Hybrid App
+Status: In Progress
+Last Updated: November 30, 2025
+
+================================================================================
+PHASE 1: PROJECT FOUNDATION
+================================================================================
+[X] Set up project structure and architecture
+[X] Configure dependency injection
+[X] Set up Entity Framework Core with SQLite database
+[X] Create base models and database context
+[X] Implement navigation and layout system
+[X] Design consistent UI theme (colors, fonts, spacing)
+
+================================================================================
+PHASE 2: CORE DATA MODELS
+================================================================================
+[X] Company/Business profile
+[X] Chart of Accounts (Assets, Liabilities, Equity, Income, Expenses)
+[X] Customers
+[X] Vendors/Suppliers
+[X] Products/Services
+[X] Transactions (base class)
+[X] Journal Entries
+
+================================================================================
+PHASE 3: DASHBOARD
+================================================================================
+[X] Main dashboard layout
+[X] Profit & Loss summary widget
+[X] Cash flow widget
+[X] Accounts receivable aging widget
+[X] Accounts payable aging widget
+[X] Recent transactions list
+[X] Quick action buttons
+
+================================================================================
+PHASE 4: CUSTOMER MANAGEMENT
+================================================================================
+[ ] Customer list page with search/filter
+[ ] Add/Edit customer form
+[ ] Customer detail view
+[ ] Customer transaction history
+[ ] Customer balance tracking
+
+================================================================================
+PHASE 5: VENDOR MANAGEMENT
+================================================================================
+[ ] Vendor list page with search/filter
+[ ] Add/Edit vendor form
+[ ] Vendor detail view
+[ ] Vendor transaction history
+[ ] Vendor balance tracking
+
+================================================================================
+PHASE 6: PRODUCTS & SERVICES
+================================================================================
+[ ] Product/Service list page
+[ ] Add/Edit product form
+[ ] Inventory tracking (optional)
+[ ] Pricing and cost management
+[ ] Categories/Types
+
+================================================================================
+PHASE 7: INVOICING (Sales)
+================================================================================
+[ ] Invoice list page
+[ ] Create/Edit invoice form
+[ ] Invoice line items management
+[ ] Invoice PDF generation
+[ ] Invoice status tracking (Draft, Sent, Paid, Overdue)
+[ ] Send invoice via email (optional)
+[ ] Record payment against invoice
+[ ] Credit memos
+
+================================================================================
+PHASE 8: BILLS & EXPENSES (Purchases)
+================================================================================
+[ ] Bills list page
+[ ] Create/Edit bill form
+[ ] Bill payment tracking
+[ ] Expense entry (quick add)
+[ ] Expense categories
+[ ] Recurring expenses
+[ ] Vendor credits
+
+================================================================================
+PHASE 9: BANKING
+================================================================================
+[ ] Bank accounts list
+[ ] Add/Edit bank account
+[ ] Manual transaction entry
+[ ] Bank reconciliation
+[ ] Transfer between accounts
+[ ] Bank statement import (CSV/OFX)
+
+================================================================================
+PHASE 10: CHART OF ACCOUNTS
+================================================================================
+[ ] Accounts list with hierarchy
+[ ] Add/Edit account form
+[ ] Account types (Asset, Liability, Equity, Income, Expense)
+[ ] Sub-accounts support
+[ ] Account balances
+
+================================================================================
+PHASE 11: JOURNAL ENTRIES
+================================================================================
+[ ] Journal entry list
+[ ] Create/Edit journal entry
+[ ] Debit/Credit validation (must balance)
+[ ] Recurring journal entries
+
+================================================================================
+PHASE 12: REPORTS
+================================================================================
+[ ] Profit & Loss Statement
+[ ] Balance Sheet
+[ ] Cash Flow Statement
+[ ] Accounts Receivable Aging
+[ ] Accounts Payable Aging
+[ ] Trial Balance
+[ ] General Ledger
+[ ] Customer/Vendor statements
+[ ] Sales reports
+[ ] Expense reports
+[ ] Tax summary report
+[ ] Report date range filters
+[ ] Export to PDF/Excel
+
+================================================================================
+PHASE 13: SETTINGS & CONFIGURATION
+================================================================================
+[ ] Company settings page
+[ ] Fiscal year settings
+[ ] Tax rate configuration
+[ ] Invoice customization (logo, terms)
+[ ] User preferences
+[ ] Data backup/restore
+
+================================================================================
+PHASE 14: ADVANCED FEATURES (Future)
+================================================================================
+[ ] Multi-currency support
+[ ] Payroll basics
+[ ] Project/Job tracking
+[ ] Time tracking
+[ ] Estimates/Quotes
+[ ] Purchase Orders
+[ ] Class/Location tracking
+[ ] Budgeting
+[ ] Audit trail
+
+
+================================================================================
+NOTES
+================================================================================
+- Focus on core accounting functionality first
+- Keep UI clean and intuitive like QuickBooks
+- Use double-entry accounting principles
+- All monetary values should balance (debits = credits)
+- Consider offline-first approach for MAUI
+
+================================================================================

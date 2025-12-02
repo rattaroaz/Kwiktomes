@@ -1,0 +1,40 @@
+@* Reusable card component for content containers *@
+
+<div class="card @CssClass">
+    @if (!string.IsNullOrEmpty(Title))
+    {
+        <div class="card-header">
+            <h3 class="card-title">@Title</h3>
+            @if (HeaderContent != null)
+            {
+                @HeaderContent
+            }
+        </div>
+    }
+    <div class="card-body">
+        @ChildContent
+    </div>
+    @if (FooterContent != null)
+    {
+        <div class="card-footer">
+            @FooterContent
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string? Title { get; set; }
+
+    [Parameter]
+    public string? CssClass { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public RenderFragment? HeaderContent { get; set; }
+
+    [Parameter]
+    public RenderFragment? FooterContent { get; set; }
+}

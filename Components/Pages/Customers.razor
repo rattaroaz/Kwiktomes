@@ -1,0 +1,625 @@
+@page "/customers"
+@page "/customers/new"
+@page "/customers/{CustomerId:int}"
+@inject ICustomerService CustomerService
+@inject NavigationManager Navigation
+
+<PageHeader Title="@GetPageTitle()" Subtitle="@GetPageSubtitle()">
+    <ActionContent>
+        @if (!isEditing)
+        {
+            <button class="btn btn-primary" @onclick="CreateNewCustomer">
+                + New Customer
+            </button>
+        }
+    </ActionContent>
+</PageHeader>
+
+@if (isLoading)
+{
+    <LoadingSpinner Text="Loading..." />
+}
+else if (isEditing && editingCustomer != null)
+{
+    @* Customer Form *@
+    <div class="customer-form-container">
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger mb-4">@errorMessage</div>
+        }
+        
+        <EditForm Model="editingCustomer" OnValidSubmit="SaveCustomerAsync">
+            <DataAnnotationsValidator />
+            
+            <Card Title="Basic Information">
+                <ChildContent>
+                    <div class="form-row">
+                        <div class="form-group" style="width: 150px;">
+                            <label class="form-label">Customer #</label>
+                            <InputText @bind-Value="editingCustomer.CustomerNumber" class="form-control" 
+                                       readonly="@(editingCustomer.Id > 0)" placeholder="Auto-generated" />
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label form-label-required">Name</label>
+                            <InputText @bind-Value="editingCustomer.Name" class="form-control" placeholder="Customer name" />
+                            <ValidationMessage For="() => editingCustomer.Name" />
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">Company Name</label>
+                            <InputText @bind-Value="editingCustomer.CompanyName" class="form-control" placeholder="Company name (optional)" />
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">Display Name</label>
+                            <InputText @bind-Value="editingCustomer.DisplayName" class="form-control" placeholder="How name appears on invoices" />
+                        </div>
+                    </div>
+                </ChildContent>
+            </Card>
+            
+            <Card Title="Contact Information" CssClass="mt-4">
+                <ChildContent>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">First Name</label>
+                            <InputText @bind-Value="editingCustomer.FirstName" class="form-control" />
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">Last Name</label>
+                            <InputText @bind-Value="editingCustomer.LastName" class="form-control" />
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">Email</label>
+                            <InputText @bind-Value="editingCustomer.Email" class="form-control" type="email" placeholder="email@example.com" />
+                            <ValidationMessage For="() => editingCustomer.Email" />
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">Website</label>
+                            <InputText @bind-Value="editingCustomer.Website" class="form-control" placeholder="https://" />
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">Phone</label>
+                            <InputText @bind-Value="editingCustomer.Phone" class="form-control" placeholder="(555) 555-5555" />
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">Mobile</label>
+                            <InputText @bind-Value="editingCustomer.Mobile" class="form-control" placeholder="(555) 555-5555" />
+                        </div>
+                    </div>
+                </ChildContent>
+            </Card>
+            
+            <Card Title="Billing Address" CssClass="mt-4">
+                <ChildContent>
+                    <div class="form-group">
+                        <label class="form-label">Address Line 1</label>
+                        <InputText @bind-Value="editingCustomer.BillingAddress1" class="form-control" placeholder="Street address" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Address Line 2</label>
+                        <InputText @bind-Value="editingCustomer.BillingAddress2" class="form-control" placeholder="Suite, unit, etc." />
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">City</label>
+                            <InputText @bind-Value="editingCustomer.BillingCity" class="form-control" />
+                        </div>
+                        <div class="form-group" style="width: 120px;">
+                            <label class="form-label">State</label>
+                            <InputText @bind-Value="editingCustomer.BillingState" class="form-control" />
+                        </div>
+                        <div class="form-group" style="width: 120px;">
+                            <label class="form-label">ZIP</label>
+                            <InputText @bind-Value="editingCustomer.BillingPostalCode" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="form-group" style="max-width: 300px;">
+                        <label class="form-label">Country</label>
+                        <InputText @bind-Value="editingCustomer.BillingCountry" class="form-control" />
+                    </div>
+                </ChildContent>
+            </Card>
+            
+            <Card Title="Shipping Address" CssClass="mt-4">
+                <ChildContent>
+                    <div class="form-check mb-4">
+                        <InputCheckbox @bind-Value="editingCustomer.ShippingSameAsBilling" class="form-check-input" id="sameAsBilling" />
+                        <label class="form-check-label" for="sameAsBilling">Same as billing address</label>
+                    </div>
+                    
+                    @if (!editingCustomer.ShippingSameAsBilling)
+                    {
+                        <div class="form-group">
+                            <label class="form-label">Address Line 1</label>
+                            <InputText @bind-Value="editingCustomer.ShippingAddress1" class="form-control" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Address Line 2</label>
+                            <InputText @bind-Value="editingCustomer.ShippingAddress2" class="form-control" />
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group flex-1">
+                                <label class="form-label">City</label>
+                                <InputText @bind-Value="editingCustomer.ShippingCity" class="form-control" />
+                            </div>
+                            <div class="form-group" style="width: 120px;">
+                                <label class="form-label">State</label>
+                                <InputText @bind-Value="editingCustomer.ShippingState" class="form-control" />
+                            </div>
+                            <div class="form-group" style="width: 120px;">
+                                <label class="form-label">ZIP</label>
+                                <InputText @bind-Value="editingCustomer.ShippingPostalCode" class="form-control" />
+                            </div>
+                        </div>
+                    }
+                </ChildContent>
+            </Card>
+            
+            <Card Title="Payment & Tax Settings" CssClass="mt-4">
+                <ChildContent>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">Payment Terms</label>
+                            <InputSelect @bind-Value="editingCustomer.PaymentTermsDays" class="form-control">
+                                <option value="0">Due on Receipt</option>
+                                <option value="7">Net 7</option>
+                                <option value="10">Net 10</option>
+                                <option value="15">Net 15</option>
+                                <option value="30">Net 30</option>
+                                <option value="45">Net 45</option>
+                                <option value="60">Net 60</option>
+                                <option value="90">Net 90</option>
+                            </InputSelect>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">Credit Limit</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <InputNumber @bind-Value="editingCustomer.CreditLimit" class="form-control" />
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <div class="form-check mt-4">
+                                <InputCheckbox @bind-Value="editingCustomer.IsTaxExempt" class="form-check-input" id="taxExempt" />
+                                <label class="form-check-label" for="taxExempt">Tax Exempt</label>
+                            </div>
+                        </div>
+                        @if (editingCustomer.IsTaxExempt)
+                        {
+                            <div class="form-group flex-1">
+                                <label class="form-label">Tax Exempt Number</label>
+                                <InputText @bind-Value="editingCustomer.TaxExemptNumber" class="form-control" />
+                            </div>
+                        }
+                    </div>
+                </ChildContent>
+            </Card>
+            
+            <Card Title="Additional Information" CssClass="mt-4">
+                <ChildContent>
+                    <div class="form-group">
+                        <label class="form-label">Notes</label>
+                        <InputTextArea @bind-Value="editingCustomer.Notes" class="form-control" rows="3" 
+                                       placeholder="Internal notes about this customer" />
+                    </div>
+                    
+                    @if (editingCustomer.Id > 0)
+                    {
+                        <div class="form-check mt-4">
+                            <InputCheckbox @bind-Value="editingCustomer.IsActive" class="form-check-input" id="isActive" />
+                            <label class="form-check-label" for="isActive">Customer is active</label>
+                        </div>
+                    }
+                </ChildContent>
+            </Card>
+            
+            <div class="form-actions mt-6">
+                <button type="button" class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-lg" disabled="@isSaving">
+                    @(isSaving ? "Saving..." : "Save Customer")
+                </button>
+            </div>
+        </EditForm>
+    </div>
+}
+else
+{
+    @* Customer List *@
+    <div class="customers-toolbar">
+        <div class="search-container" style="max-width: 400px;">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" placeholder="Search customers..." 
+                   @bind="searchTerm" @bind:event="oninput" @onkeyup="OnSearchKeyUp" />
+        </div>
+        <label class="form-check" style="margin: 0;">
+            <input type="checkbox" class="form-check-input" @bind="showInactive" @bind:after="LoadCustomersAsync" />
+            <span class="form-check-label">Show Inactive</span>
+        </label>
+    </div>
+    
+    <div class="customers-summary">
+        <div class="summary-card">
+            <div class="summary-icon">👥</div>
+            <div class="summary-info">
+                <div class="summary-label">Total Customers</div>
+                <div class="summary-value">@customers.Count(c => c.IsActive)</div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon">💰</div>
+            <div class="summary-info">
+                <div class="summary-label">Total Receivables</div>
+                <div class="summary-value">@customers.Where(c => c.Balance > 0).Sum(c => c.Balance).ToString("C2")</div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon">⚠️</div>
+            <div class="summary-info">
+                <div class="summary-label">With Balance</div>
+                <div class="summary-value">@customers.Count(c => c.Balance > 0)</div>
+            </div>
+        </div>
+    </div>
+
+    @if (GetFilteredCustomers().Any())
+    {
+        <Card>
+            <ChildContent>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;"></th>
+                            <th>Customer</th>
+                            <th>Contact</th>
+                            <th>Phone</th>
+                            <th class="text-right">Balance</th>
+                            <th style="width: 100px;">Status</th>
+                            <th style="width: 80px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var customer in GetFilteredCustomers())
+                        {
+                            <tr class="@(customer.IsActive ? "" : "inactive") cursor-pointer" @onclick="() => EditCustomer(customer)">
+                                <td>
+                                    <div class="customer-avatar">@customer.Initials</div>
+                                </td>
+                                <td>
+                                    <div class="customer-name">@customer.FullName</div>
+                                    @if (!string.IsNullOrEmpty(customer.CompanyName) && customer.CompanyName != customer.Name)
+                                    {
+                                        <div class="customer-company">@customer.CompanyName</div>
+                                    }
+                                    <div class="customer-number">@customer.CustomerNumber</div>
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(customer.Email))
+                                    {
+                                        <div class="customer-email">@customer.Email</div>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(customer.Phone))
+                                    {
+                                        <span>@customer.Phone</span>
+                                    }
+                                </td>
+                                <td class="text-right font-mono @(customer.Balance > 0 ? "text-danger" : "")">
+                                    @customer.Balance.ToString("C2")
+                                </td>
+                                <td>
+                                    @if (customer.IsActive)
+                                    {
+                                        <span class="badge badge-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-secondary">Inactive</span>
+                                    }
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-secondary" @onclick:stopPropagation="true" 
+                                            @onclick="() => EditCustomer(customer)">✏️</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </ChildContent>
+        </Card>
+    }
+    else
+    {
+        <Card>
+            <ChildContent>
+                <div class="empty-state">
+                    <span class="empty-state-icon">👥</span>
+                    <div class="empty-state-title">No customers found</div>
+                    <div class="empty-state-description">
+                        @if (string.IsNullOrEmpty(searchTerm))
+                        {
+                            <span>Add your first customer to start tracking sales and receivables.</span>
+                        }
+                        else
+                        {
+                            <span>No customers match your search criteria.</span>
+                        }
+                    </div>
+                    <button class="btn btn-primary" @onclick="CreateNewCustomer">+ Add Customer</button>
+                </div>
+            </ChildContent>
+        </Card>
+    }
+}
+
+<style>
+    .customer-form-container {
+        max-width: 800px;
+    }
+    
+    .customers-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-4);
+        gap: var(--space-4);
+        flex-wrap: wrap;
+    }
+    
+    .customers-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--space-4);
+        margin-bottom: var(--space-4);
+    }
+    
+    .summary-card {
+        background: var(--bg-primary);
+        border-radius: var(--radius-lg);
+        padding: var(--space-4);
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        border: 1px solid var(--border-color);
+    }
+    
+    .summary-icon { font-size: var(--text-2xl); }
+    .summary-label { font-size: var(--text-sm); color: var(--text-secondary); }
+    .summary-value { font-size: var(--text-xl); font-weight: var(--font-semibold); }
+    
+    .form-row {
+        display: flex;
+        gap: var(--space-4);
+        flex-wrap: wrap;
+    }
+    
+    .form-row .form-group { min-width: 150px; }
+    
+    .form-actions {
+        display: flex;
+        gap: var(--space-3);
+        justify-content: flex-end;
+        padding-top: var(--space-4);
+        border-top: 1px solid var(--border-color);
+    }
+    
+    .customer-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-full);
+        background: var(--primary-light);
+        color: var(--primary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: var(--font-semibold);
+        font-size: var(--text-sm);
+    }
+    
+    .customer-name { font-weight: var(--font-medium); }
+    .customer-company { font-size: var(--text-sm); color: var(--text-secondary); }
+    .customer-number { font-size: var(--text-xs); color: var(--text-muted); font-family: var(--font-mono); }
+    .customer-email { font-size: var(--text-sm); color: var(--text-secondary); }
+    
+    tr.inactive { opacity: 0.6; }
+</style>
+
+@code {
+    [Parameter]
+    public int? CustomerId { get; set; }
+    
+    private List<Customer> customers = new();
+    private Customer? editingCustomer;
+    private bool isLoading = true;
+    private bool isEditing = false;
+    private bool isSaving = false;
+    private string searchTerm = "";
+    private bool showInactive = false;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCustomersAsync();
+        
+        // Check if we should open a specific customer or create new
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        if (uri.AbsolutePath.EndsWith("/new", StringComparison.OrdinalIgnoreCase))
+        {
+            CreateNewCustomer();
+        }
+        else if (CustomerId.HasValue && CustomerId.Value > 0)
+        {
+            var customer = customers.FirstOrDefault(c => c.Id == CustomerId.Value);
+            if (customer != null)
+            {
+                EditCustomer(customer);
+            }
+        }
+    }
+
+    private async Task LoadCustomersAsync()
+    {
+        isLoading = true;
+        try
+        {
+            customers = (await CustomerService.GetAllAsync()).ToList();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private IEnumerable<Customer> GetFilteredCustomers()
+    {
+        var filtered = customers.AsEnumerable();
+        
+        if (!showInactive)
+            filtered = filtered.Where(c => c.IsActive);
+        
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.ToLower();
+            filtered = filtered.Where(c =>
+                c.Name.ToLower().Contains(term) ||
+                (c.CompanyName?.ToLower().Contains(term) ?? false) ||
+                (c.Email?.ToLower().Contains(term) ?? false) ||
+                c.CustomerNumber.ToLower().Contains(term));
+        }
+        
+        return filtered.OrderBy(c => c.Name);
+    }
+
+    private void CreateNewCustomer()
+    {
+        editingCustomer = new Customer
+        {
+            IsActive = true,
+            PaymentTermsDays = 30,
+            PaymentTerms = "Net 30",
+            BillingCountry = "USA",
+            ShippingSameAsBilling = true
+        };
+        isEditing = true;
+        errorMessage = null;
+    }
+
+    private void EditCustomer(Customer customer)
+    {
+        editingCustomer = new Customer
+        {
+            Id = customer.Id,
+            CustomerNumber = customer.CustomerNumber,
+            Name = customer.Name,
+            CompanyName = customer.CompanyName,
+            DisplayName = customer.DisplayName,
+            FirstName = customer.FirstName,
+            LastName = customer.LastName,
+            Email = customer.Email,
+            Phone = customer.Phone,
+            Mobile = customer.Mobile,
+            Website = customer.Website,
+            BillingAddress1 = customer.BillingAddress1,
+            BillingAddress2 = customer.BillingAddress2,
+            BillingCity = customer.BillingCity,
+            BillingState = customer.BillingState,
+            BillingPostalCode = customer.BillingPostalCode,
+            BillingCountry = customer.BillingCountry,
+            ShippingSameAsBilling = customer.ShippingSameAsBilling,
+            ShippingAddress1 = customer.ShippingAddress1,
+            ShippingAddress2 = customer.ShippingAddress2,
+            ShippingCity = customer.ShippingCity,
+            ShippingState = customer.ShippingState,
+            ShippingPostalCode = customer.ShippingPostalCode,
+            ShippingCountry = customer.ShippingCountry,
+            Balance = customer.Balance,
+            CreditLimit = customer.CreditLimit,
+            PaymentTerms = customer.PaymentTerms,
+            PaymentTermsDays = customer.PaymentTermsDays,
+            TaxRate = customer.TaxRate,
+            IsTaxExempt = customer.IsTaxExempt,
+            TaxExemptNumber = customer.TaxExemptNumber,
+            IsActive = customer.IsActive,
+            Notes = customer.Notes
+        };
+        isEditing = true;
+        errorMessage = null;
+    }
+
+    private void CancelEdit()
+    {
+        isEditing = false;
+        editingCustomer = null;
+        errorMessage = null;
+        Navigation.NavigateTo("/customers");
+    }
+
+    private async Task SaveCustomerAsync()
+    {
+        if (editingCustomer == null) return;
+        
+        isSaving = true;
+        errorMessage = null;
+        
+        try
+        {
+            // Set payment terms text based on days
+            editingCustomer.PaymentTerms = editingCustomer.PaymentTermsDays == 0 
+                ? "Due on Receipt" 
+                : $"Net {editingCustomer.PaymentTermsDays}";
+            
+            if (editingCustomer.Id > 0)
+            {
+                await CustomerService.UpdateAsync(editingCustomer);
+            }
+            else
+            {
+                await CustomerService.CreateAsync(editingCustomer);
+            }
+            
+            await LoadCustomersAsync();
+            CancelEdit();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving customer: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task OnSearchKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await LoadCustomersAsync();
+        }
+    }
+
+    private string GetPageTitle()
+    {
+        if (isEditing)
+            return editingCustomer?.Id > 0 ? "Edit Customer" : "New Customer";
+        return "Customers";
+    }
+
+    private string GetPageSubtitle()
+    {
+        if (isEditing)
+            return editingCustomer?.Id > 0 ? $"Editing {editingCustomer.Name}" : "Add a new customer";
+        return "Manage your customers and their information";
+    }
+}

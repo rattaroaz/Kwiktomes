@@ -1,0 +1,10 @@
+<api type="debug" assembly-name="Kwikbooks" mvid="04739e720aa54ee180986b0a54f032a1">
+  <java-to-managed>
+    <entry java-name="crc6441c5d652541440ff/MainActivity" managed-name="Kwikbooks.MainActivity, Kwikbooks" managed-type-token-id="33554447" />
+    <entry java-name="crc6441c5d652541440ff/MainApplication" managed-name="Kwikbooks.MainApplication, Kwikbooks" managed-type-token-id="33554448" />
+  </java-to-managed>
+  <managed-to-java>
+    <entry java-name="crc6441c5d652541440ff/MainActivity" managed-name="Kwikbooks.MainActivity, Kwikbooks" managed-type-token-id="33554447" />
+    <entry java-name="crc6441c5d652541440ff/MainApplication" managed-name="Kwikbooks.MainApplication, Kwikbooks" managed-type-token-id="33554448" />
+  </managed-to-java>
+</api>

@@ -1,0 +1,591 @@
+@page "/vendors"
+@page "/vendors/new"
+@page "/vendors/{VendorId:int}"
+@inject IVendorService VendorService
+@inject IAccountService AccountService
+@inject NavigationManager Navigation
+
+<PageHeader Title="@GetPageTitle()" Subtitle="@GetPageSubtitle()">
+    <ActionContent>
+        @if (!isEditing)
+        {
+            <button class="btn btn-primary" @onclick="CreateNewVendor">
+                + New Vendor
+            </button>
+        }
+    </ActionContent>
+</PageHeader>
+
+@if (isLoading)
+{
+    <LoadingSpinner Text="Loading..." />
+}
+else if (isEditing && editingVendor != null)
+{
+    @* Vendor Form *@
+    <div class="vendor-form-container">
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger mb-4">@errorMessage</div>
+        }
+        
+        <EditForm Model="editingVendor" OnValidSubmit="SaveVendorAsync">
+            <DataAnnotationsValidator />
+            
+            <Card Title="Basic Information">
+                <ChildContent>
+                    <div class="form-row">
+                        <div class="form-group" style="width: 150px;">
+                            <label class="form-label">Vendor #</label>
+                            <InputText @bind-Value="editingVendor.VendorNumber" class="form-control" 
+                                       readonly="@(editingVendor.Id > 0)" placeholder="Auto-generated" />
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label form-label-required">Name</label>
+                            <InputText @bind-Value="editingVendor.Name" class="form-control" placeholder="Vendor name" />
+                            <ValidationMessage For="() => editingVendor.Name" />
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">Company Name</label>
+                            <InputText @bind-Value="editingVendor.CompanyName" class="form-control" placeholder="Company name (optional)" />
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">Display Name</label>
+                            <InputText @bind-Value="editingVendor.DisplayName" class="form-control" placeholder="How name appears on bills" />
+                        </div>
+                    </div>
+                </ChildContent>
+            </Card>
+            
+            <Card Title="Contact Information" CssClass="mt-4">
+                <ChildContent>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">Contact Name</label>
+                            <InputText @bind-Value="editingVendor.ContactName" class="form-control" />
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">Email</label>
+                            <InputText @bind-Value="editingVendor.Email" class="form-control" type="email" placeholder="email@example.com" />
+                            <ValidationMessage For="() => editingVendor.Email" />
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">Phone</label>
+                            <InputText @bind-Value="editingVendor.Phone" class="form-control" placeholder="(555) 555-5555" />
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">Mobile</label>
+                            <InputText @bind-Value="editingVendor.Mobile" class="form-control" placeholder="(555) 555-5555" />
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">Fax</label>
+                            <InputText @bind-Value="editingVendor.Fax" class="form-control" placeholder="(555) 555-5555" />
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="max-width: 400px;">
+                        <label class="form-label">Website</label>
+                        <InputText @bind-Value="editingVendor.Website" class="form-control" placeholder="https://" />
+                    </div>
+                </ChildContent>
+            </Card>
+            
+            <Card Title="Address" CssClass="mt-4">
+                <ChildContent>
+                    <div class="form-group">
+                        <label class="form-label">Address Line 1</label>
+                        <InputText @bind-Value="editingVendor.Address1" class="form-control" placeholder="Street address" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Address Line 2</label>
+                        <InputText @bind-Value="editingVendor.Address2" class="form-control" placeholder="Suite, unit, etc." />
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">City</label>
+                            <InputText @bind-Value="editingVendor.City" class="form-control" />
+                        </div>
+                        <div class="form-group" style="width: 120px;">
+                            <label class="form-label">State</label>
+                            <InputText @bind-Value="editingVendor.State" class="form-control" />
+                        </div>
+                        <div class="form-group" style="width: 120px;">
+                            <label class="form-label">ZIP</label>
+                            <InputText @bind-Value="editingVendor.PostalCode" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="form-group" style="max-width: 300px;">
+                        <label class="form-label">Country</label>
+                        <InputText @bind-Value="editingVendor.Country" class="form-control" />
+                    </div>
+                </ChildContent>
+            </Card>
+            
+            <Card Title="Payment & Tax Settings" CssClass="mt-4">
+                <ChildContent>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">Your Account # with Vendor</label>
+                            <InputText @bind-Value="editingVendor.AccountNumber" class="form-control" placeholder="Your customer account number" />
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">Payment Terms</label>
+                            <InputSelect @bind-Value="editingVendor.PaymentTermsDays" class="form-control">
+                                <option value="0">Due on Receipt</option>
+                                <option value="7">Net 7</option>
+                                <option value="10">Net 10</option>
+                                <option value="15">Net 15</option>
+                                <option value="30">Net 30</option>
+                                <option value="45">Net 45</option>
+                                <option value="60">Net 60</option>
+                                <option value="90">Net 90</option>
+                            </InputSelect>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">Default Expense Account</label>
+                            <InputSelect @bind-Value="editingVendor.DefaultExpenseAccountId" class="form-control">
+                                <option value="">-- Select Account --</option>
+                                @foreach (var account in expenseAccounts)
+                                {
+                                    <option value="@account.Id">@account.AccountNumber - @account.Name</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row mt-4">
+                        <div class="form-group flex-1">
+                            <label class="form-label">Tax ID (for 1099)</label>
+                            <InputText @bind-Value="editingVendor.TaxId" class="form-control" placeholder="XX-XXXXXXX" />
+                        </div>
+                        <div class="form-group">
+                            <div class="form-check mt-4">
+                                <InputCheckbox @bind-Value="editingVendor.IsEligibleFor1099" class="form-check-input" id="eligible1099" />
+                                <label class="form-check-label" for="eligible1099">Track for 1099</label>
+                            </div>
+                        </div>
+                    </div>
+                </ChildContent>
+            </Card>
+            
+            <Card Title="Additional Information" CssClass="mt-4">
+                <ChildContent>
+                    <div class="form-group">
+                        <label class="form-label">Notes</label>
+                        <InputTextArea @bind-Value="editingVendor.Notes" class="form-control" rows="3" 
+                                       placeholder="Internal notes about this vendor" />
+                    </div>
+                    
+                    @if (editingVendor.Id > 0)
+                    {
+                        <div class="form-check mt-4">
+                            <InputCheckbox @bind-Value="editingVendor.IsActive" class="form-check-input" id="isActive" />
+                            <label class="form-check-label" for="isActive">Vendor is active</label>
+                        </div>
+                    }
+                </ChildContent>
+            </Card>
+            
+            <div class="form-actions mt-6">
+                <button type="button" class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-lg" disabled="@isSaving">
+                    @(isSaving ? "Saving..." : "Save Vendor")
+                </button>
+            </div>
+        </EditForm>
+    </div>
+}
+else
+{
+    @* Vendor List *@
+    <div class="vendors-toolbar">
+        <div class="search-container" style="max-width: 400px;">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" placeholder="Search vendors..." 
+                   @bind="searchTerm" @bind:event="oninput" />
+        </div>
+        <label class="form-check" style="margin: 0;">
+            <input type="checkbox" class="form-check-input" @bind="showInactive" @bind:after="LoadVendorsAsync" />
+            <span class="form-check-label">Show Inactive</span>
+        </label>
+    </div>
+    
+    <div class="vendors-summary">
+        <div class="summary-card">
+            <div class="summary-icon">🏪</div>
+            <div class="summary-info">
+                <div class="summary-label">Total Vendors</div>
+                <div class="summary-value">@vendors.Count(v => v.IsActive)</div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon">💸</div>
+            <div class="summary-info">
+                <div class="summary-label">Total Payables</div>
+                <div class="summary-value">@vendors.Where(v => v.Balance > 0).Sum(v => v.Balance).ToString("C2")</div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon">📋</div>
+            <div class="summary-info">
+                <div class="summary-label">1099 Vendors</div>
+                <div class="summary-value">@vendors.Count(v => v.IsEligibleFor1099 && v.IsActive)</div>
+            </div>
+        </div>
+    </div>
+
+    @if (GetFilteredVendors().Any())
+    {
+        <Card>
+            <ChildContent>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;"></th>
+                            <th>Vendor</th>
+                            <th>Contact</th>
+                            <th>Phone</th>
+                            <th class="text-right">Balance</th>
+                            <th style="width: 100px;">Status</th>
+                            <th style="width: 80px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var vendor in GetFilteredVendors())
+                        {
+                            <tr class="@(vendor.IsActive ? "" : "inactive") cursor-pointer" @onclick="() => EditVendor(vendor)">
+                                <td>
+                                    <div class="vendor-avatar">@vendor.Initials</div>
+                                </td>
+                                <td>
+                                    <div class="vendor-name">
+                                        @vendor.FullName
+                                        @if (vendor.IsEligibleFor1099)
+                                        {
+                                            <span class="badge badge-info ml-2">1099</span>
+                                        }
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(vendor.CompanyName) && vendor.CompanyName != vendor.Name)
+                                    {
+                                        <div class="vendor-company">@vendor.CompanyName</div>
+                                    }
+                                    <div class="vendor-number">@vendor.VendorNumber</div>
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(vendor.Email))
+                                    {
+                                        <div class="vendor-email">@vendor.Email</div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(vendor.ContactName))
+                                    {
+                                        <div class="vendor-contact">@vendor.ContactName</div>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(vendor.Phone))
+                                    {
+                                        <span>@vendor.Phone</span>
+                                    }
+                                </td>
+                                <td class="text-right font-mono @(vendor.Balance > 0 ? "text-warning" : "")">
+                                    @vendor.Balance.ToString("C2")
+                                </td>
+                                <td>
+                                    @if (vendor.IsActive)
+                                    {
+                                        <span class="badge badge-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-secondary">Inactive</span>
+                                    }
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-secondary" @onclick:stopPropagation="true" 
+                                            @onclick="() => EditVendor(vendor)">✏️</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </ChildContent>
+        </Card>
+    }
+    else
+    {
+        <Card>
+            <ChildContent>
+                <div class="empty-state">
+                    <span class="empty-state-icon">🏪</span>
+                    <div class="empty-state-title">No vendors found</div>
+                    <div class="empty-state-description">
+                        @if (string.IsNullOrEmpty(searchTerm))
+                        {
+                            <span>Add your first vendor to start tracking expenses and payables.</span>
+                        }
+                        else
+                        {
+                            <span>No vendors match your search criteria.</span>
+                        }
+                    </div>
+                    <button class="btn btn-primary" @onclick="CreateNewVendor">+ Add Vendor</button>
+                </div>
+            </ChildContent>
+        </Card>
+    }
+}
+
+<style>
+    .vendor-form-container { max-width: 800px; }
+    
+    .vendors-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-4);
+        gap: var(--space-4);
+        flex-wrap: wrap;
+    }
+    
+    .vendors-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--space-4);
+        margin-bottom: var(--space-4);
+    }
+    
+    .summary-card {
+        background: var(--bg-primary);
+        border-radius: var(--radius-lg);
+        padding: var(--space-4);
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        border: 1px solid var(--border-color);
+    }
+    
+    .summary-icon { font-size: var(--text-2xl); }
+    .summary-label { font-size: var(--text-sm); color: var(--text-secondary); }
+    .summary-value { font-size: var(--text-xl); font-weight: var(--font-semibold); }
+    
+    .form-row { display: flex; gap: var(--space-4); flex-wrap: wrap; }
+    .form-row .form-group { min-width: 150px; }
+    
+    .form-actions {
+        display: flex;
+        gap: var(--space-3);
+        justify-content: flex-end;
+        padding-top: var(--space-4);
+        border-top: 1px solid var(--border-color);
+    }
+    
+    .vendor-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-full);
+        background: #fef3c7;
+        color: #d97706;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: var(--font-semibold);
+        font-size: var(--text-sm);
+    }
+    
+    .vendor-name { font-weight: var(--font-medium); }
+    .vendor-company { font-size: var(--text-sm); color: var(--text-secondary); }
+    .vendor-number { font-size: var(--text-xs); color: var(--text-muted); font-family: var(--font-mono); }
+    .vendor-email { font-size: var(--text-sm); color: var(--text-secondary); }
+    .vendor-contact { font-size: var(--text-xs); color: var(--text-muted); }
+    
+    tr.inactive { opacity: 0.6; }
+</style>
+
+@code {
+    [Parameter]
+    public int? VendorId { get; set; }
+    
+    private List<Vendor> vendors = new();
+    private List<Account> expenseAccounts = new();
+    private Vendor? editingVendor;
+    private bool isLoading = true;
+    private bool isEditing = false;
+    private bool isSaving = false;
+    private string searchTerm = "";
+    private bool showInactive = false;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+        
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        if (uri.AbsolutePath.EndsWith("/new", StringComparison.OrdinalIgnoreCase))
+        {
+            CreateNewVendor();
+        }
+        else if (VendorId.HasValue && VendorId.Value > 0)
+        {
+            var vendor = vendors.FirstOrDefault(v => v.Id == VendorId.Value);
+            if (vendor != null)
+            {
+                EditVendor(vendor);
+            }
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        isLoading = true;
+        try
+        {
+            vendors = (await VendorService.GetAllAsync()).ToList();
+            expenseAccounts = (await AccountService.GetAccountsByTypeAsync(AccountType.Expense)).ToList();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadVendorsAsync()
+    {
+        vendors = (await VendorService.GetAllAsync()).ToList();
+    }
+
+    private IEnumerable<Vendor> GetFilteredVendors()
+    {
+        var filtered = vendors.AsEnumerable();
+        
+        if (!showInactive)
+            filtered = filtered.Where(v => v.IsActive);
+        
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.ToLower();
+            filtered = filtered.Where(v =>
+                v.Name.ToLower().Contains(term) ||
+                (v.CompanyName?.ToLower().Contains(term) ?? false) ||
+                (v.Email?.ToLower().Contains(term) ?? false) ||
+                v.VendorNumber.ToLower().Contains(term));
+        }
+        
+        return filtered.OrderBy(v => v.Name);
+    }
+
+    private void CreateNewVendor()
+    {
+        editingVendor = new Vendor
+        {
+            IsActive = true,
+            PaymentTermsDays = 30,
+            PaymentTerms = "Net 30",
+            Country = "USA"
+        };
+        isEditing = true;
+        errorMessage = null;
+    }
+
+    private void EditVendor(Vendor vendor)
+    {
+        editingVendor = new Vendor
+        {
+            Id = vendor.Id,
+            VendorNumber = vendor.VendorNumber,
+            Name = vendor.Name,
+            CompanyName = vendor.CompanyName,
+            DisplayName = vendor.DisplayName,
+            ContactName = vendor.ContactName,
+            FirstName = vendor.FirstName,
+            LastName = vendor.LastName,
+            Email = vendor.Email,
+            Phone = vendor.Phone,
+            Mobile = vendor.Mobile,
+            Fax = vendor.Fax,
+            Website = vendor.Website,
+            Address1 = vendor.Address1,
+            Address2 = vendor.Address2,
+            City = vendor.City,
+            State = vendor.State,
+            PostalCode = vendor.PostalCode,
+            Country = vendor.Country,
+            Balance = vendor.Balance,
+            AccountNumber = vendor.AccountNumber,
+            PaymentTerms = vendor.PaymentTerms,
+            PaymentTermsDays = vendor.PaymentTermsDays,
+            TaxId = vendor.TaxId,
+            IsEligibleFor1099 = vendor.IsEligibleFor1099,
+            DefaultExpenseAccountId = vendor.DefaultExpenseAccountId,
+            IsActive = vendor.IsActive,
+            Notes = vendor.Notes
+        };
+        isEditing = true;
+        errorMessage = null;
+    }
+
+    private void CancelEdit()
+    {
+        isEditing = false;
+        editingVendor = null;
+        errorMessage = null;
+        Navigation.NavigateTo("/vendors");
+    }
+
+    private async Task SaveVendorAsync()
+    {
+        if (editingVendor == null) return;
+        
+        isSaving = true;
+        errorMessage = null;
+        
+        try
+        {
+            editingVendor.PaymentTerms = editingVendor.PaymentTermsDays == 0 
+                ? "Due on Receipt" 
+                : $"Net {editingVendor.PaymentTermsDays}";
+            
+            if (editingVendor.Id > 0)
+            {
+                await VendorService.UpdateAsync(editingVendor);
+            }
+            else
+            {
+                await VendorService.CreateAsync(editingVendor);
+            }
+            
+            await LoadVendorsAsync();
+            CancelEdit();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving vendor: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private string GetPageTitle()
+    {
+        if (isEditing)
+            return editingVendor?.Id > 0 ? "Edit Vendor" : "New Vendor";
+        return "Vendors";
+    }
+
+    private string GetPageSubtitle()
+    {
+        if (isEditing)
+            return editingVendor?.Id > 0 ? $"Editing {editingVendor.Name}" : "Add a new vendor";
+        return "Manage your vendors and suppliers";
+    }
+}

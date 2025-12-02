@@ -1,0 +1,45 @@
+{
+  "Files": [
+    {
+      "Id": "C:\\Users\\kimri\\.nuget\\packages\\microsoft.aspnetcore.components.webview\\10.0.0\\staticwebassets\\blazor.modules.json",
+      "PackagePath": "staticwebassets\\_framework\\blazor.modules.json"
+    },
+    {
+      "Id": "C:\\Users\\kimri\\.nuget\\packages\\microsoft.aspnetcore.components.webview\\10.0.0\\staticwebassets\\blazor.webview.js",
+      "PackagePath": "staticwebassets\\_framework\\blazor.webview.js"
+    },
+    {
+      "Id": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\obj\\Debug\\net10.0-windows10.0.19041.0\\win-x64\\scopedcss\\bundle\\Kwikbooks.styles.css",
+      "PackagePath": "staticwebassets\\Kwikbooks.styles.css"
+    },
+    {
+      "Id": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\wwwroot\\app.css",
+      "PackagePath": "staticwebassets\\app.css"
+    },
+    {
+      "Id": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\wwwroot\\index.html",
+      "PackagePath": "staticwebassets\\index.html"
+    },
+    {
+      "Id": "obj\\Debug\\net10.0-windows10.0.19041.0\\win-x64\\staticwebassets\\msbuild.Kwikbooks.Microsoft.AspNetCore.StaticWebAssetEndpoints.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssetEndpoints.props"
+    },
+    {
+      "Id": "obj\\Debug\\net10.0-windows10.0.19041.0\\win-x64\\staticwebassets\\msbuild.Kwikbooks.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net10.0-windows10.0.19041.0\\win-x64\\staticwebassets\\msbuild.build.Kwikbooks.props",
+      "PackagePath": "build\\Kwikbooks.props"
+    },
+    {
+      "Id": "obj\\Debug\\net10.0-windows10.0.19041.0\\win-x64\\staticwebassets\\msbuild.buildMultiTargeting.Kwikbooks.props",
+      "PackagePath": "buildMultiTargeting\\Kwikbooks.props"
+    },
+    {
+      "Id": "obj\\Debug\\net10.0-windows10.0.19041.0\\win-x64\\staticwebassets\\msbuild.buildTransitive.Kwikbooks.props",
+      "PackagePath": "buildTransitive\\Kwikbooks.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

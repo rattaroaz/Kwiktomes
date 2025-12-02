@@ -1,0 +1,34 @@
+﻿@inherits LayoutComponentBase
+
+<div class="app-container">
+    <NavMenu />
+    
+    <div class="main-content">
+        <header class="top-bar">
+            <div class="top-bar-left">
+                <div class="search-container">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" placeholder="Search transactions, customers, vendors..." />
+                </div>
+            </div>
+            <div class="top-bar-right">
+                <button class="top-bar-btn" title="Create New">
+                    <span>+ New</span>
+                </button>
+                <button class="top-bar-icon-btn" title="Notifications">
+                    <span>🔔</span>
+                </button>
+                <button class="top-bar-icon-btn" title="Help">
+                    <span>❓</span>
+                </button>
+                <div class="user-menu">
+                    <span class="user-avatar">👤</span>
+                </div>
+            </div>
+        </header>
+        
+        <main class="page-content">
+            @Body
+        </main>
+    </div>
+</div>

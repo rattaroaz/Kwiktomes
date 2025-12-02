@@ -1,0 +1,641 @@
+@page "/products"
+@page "/products/new"
+@page "/products/{ProductId:int}"
+@inject IProductService ProductService
+@inject IAccountService AccountService
+@inject NavigationManager Navigation
+
+<PageHeader Title="@GetPageTitle()" Subtitle="@GetPageSubtitle()">
+    <ActionContent>
+        @if (!isEditing)
+        {
+            <button class="btn btn-primary" @onclick="CreateNewProduct">
+                + New Product/Service
+            </button>
+        }
+    </ActionContent>
+</PageHeader>
+
+@if (isLoading)
+{
+    <LoadingSpinner Text="Loading..." />
+}
+else if (isEditing && editingProduct != null)
+{
+    @* Product Form *@
+    <div class="product-form-container">
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger mb-4">@errorMessage</div>
+        }
+        
+        <EditForm Model="editingProduct" OnValidSubmit="SaveProductAsync">
+            <DataAnnotationsValidator />
+            
+            <Card Title="Basic Information">
+                <ChildContent>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label form-label-required">Name</label>
+                            <InputText @bind-Value="editingProduct.Name" class="form-control" placeholder="Product or service name" />
+                            <ValidationMessage For="() => editingProduct.Name" />
+                        </div>
+                        <div class="form-group" style="width: 150px;">
+                            <label class="form-label">SKU</label>
+                            <InputText @bind-Value="editingProduct.Sku" class="form-control" placeholder="SKU" />
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group" style="width: 200px;">
+                            <label class="form-label">Type</label>
+                            <InputSelect @bind-Value="editingProduct.Type" class="form-control">
+                                <option value="@ProductType.Service">Service</option>
+                                <option value="@ProductType.NonInventory">Non-Inventory Product</option>
+                                <option value="@ProductType.Inventory">Inventory Product</option>
+                            </InputSelect>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">Category</label>
+                            <InputText @bind-Value="editingProduct.Category" class="form-control" list="categories" placeholder="Category" />
+                            <datalist id="categories">
+                                @foreach (var cat in categories)
+                                {
+                                    <option value="@cat" />
+                                }
+                            </datalist>
+                        </div>
+                        <div class="form-group" style="width: 150px;">
+                            <label class="form-label">Unit</label>
+                            <InputText @bind-Value="editingProduct.UnitOfMeasure" class="form-control" placeholder="Each, Hour, etc." />
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <InputTextArea @bind-Value="editingProduct.Description" class="form-control" rows="2" />
+                    </div>
+                </ChildContent>
+            </Card>
+            
+            <Card Title="Sales Information" CssClass="mt-4">
+                <ChildContent>
+                    <div class="form-check mb-4">
+                        <InputCheckbox @bind-Value="editingProduct.IsSellable" class="form-check-input" id="isSellable" />
+                        <label class="form-check-label" for="isSellable">I sell this product/service</label>
+                    </div>
+                    
+                    @if (editingProduct.IsSellable)
+                    {
+                        <div class="form-row">
+                            <div class="form-group" style="width: 200px;">
+                                <label class="form-label">Sales Price</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <InputNumber @bind-Value="editingProduct.SalesPrice" class="form-control" />
+                                </div>
+                            </div>
+                            <div class="form-group flex-1">
+                                <label class="form-label">Income Account</label>
+                                <InputSelect @bind-Value="editingProduct.IncomeAccountId" class="form-control">
+                                    <option value="">-- Select Account --</option>
+                                    @foreach (var account in incomeAccounts)
+                                    {
+                                        <option value="@account.Id">@account.AccountNumber - @account.Name</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Sales Description</label>
+                            <InputTextArea @bind-Value="editingProduct.SalesDescription" class="form-control" rows="2" 
+                                           placeholder="Description shown on invoices" />
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-check">
+                                <InputCheckbox @bind-Value="editingProduct.IsTaxable" class="form-check-input" id="isTaxable" />
+                                <label class="form-check-label" for="isTaxable">Taxable</label>
+                            </div>
+                        </div>
+                    }
+                </ChildContent>
+            </Card>
+            
+            <Card Title="Purchasing Information" CssClass="mt-4">
+                <ChildContent>
+                    <div class="form-check mb-4">
+                        <InputCheckbox @bind-Value="editingProduct.IsPurchasable" class="form-check-input" id="isPurchasable" />
+                        <label class="form-check-label" for="isPurchasable">I purchase this product/service</label>
+                    </div>
+                    
+                    @if (editingProduct.IsPurchasable)
+                    {
+                        <div class="form-row">
+                            <div class="form-group" style="width: 200px;">
+                                <label class="form-label">Purchase Cost</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <InputNumber @bind-Value="editingProduct.PurchaseCost" class="form-control" />
+                                </div>
+                            </div>
+                            <div class="form-group flex-1">
+                                <label class="form-label">Expense Account</label>
+                                <InputSelect @bind-Value="editingProduct.ExpenseAccountId" class="form-control">
+                                    <option value="">-- Select Account --</option>
+                                    @foreach (var account in expenseAccounts)
+                                    {
+                                        <option value="@account.Id">@account.AccountNumber - @account.Name</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Purchase Description</label>
+                            <InputTextArea @bind-Value="editingProduct.PurchaseDescription" class="form-control" rows="2" 
+                                           placeholder="Description for purchase orders" />
+                        </div>
+                    }
+                </ChildContent>
+            </Card>
+            
+            @if (editingProduct.Type == ProductType.Inventory)
+            {
+                <Card Title="Inventory Settings" CssClass="mt-4">
+                    <ChildContent>
+                        <div class="form-row">
+                            <div class="form-group" style="width: 150px;">
+                                <label class="form-label">Qty on Hand</label>
+                                <InputNumber @bind-Value="editingProduct.QuantityOnHand" class="form-control" />
+                            </div>
+                            <div class="form-group" style="width: 150px;">
+                                <label class="form-label">Reorder Point</label>
+                                <InputNumber @bind-Value="editingProduct.ReorderPoint" class="form-control" />
+                            </div>
+                            <div class="form-group" style="width: 150px;">
+                                <label class="form-label">Reorder Qty</label>
+                                <InputNumber @bind-Value="editingProduct.ReorderQuantity" class="form-control" />
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group" style="width: 200px;">
+                                <label class="form-label">Average Cost</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <InputNumber @bind-Value="editingProduct.AverageCost" class="form-control" />
+                                </div>
+                            </div>
+                            <div class="form-group flex-1">
+                                <label class="form-label">Inventory Asset Account</label>
+                                <InputSelect @bind-Value="editingProduct.InventoryAssetAccountId" class="form-control">
+                                    <option value="">-- Select Account --</option>
+                                    @foreach (var account in assetAccounts)
+                                    {
+                                        <option value="@account.Id">@account.AccountNumber - @account.Name</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                        </div>
+                        
+                        @if (editingProduct.Id > 0)
+                        {
+                            <div class="inventory-summary mt-4">
+                                <div class="summary-item">
+                                    <span class="summary-label">Inventory Value:</span>
+                                    <span class="summary-value">@((editingProduct.QuantityOnHand * editingProduct.AverageCost).ToString("C2"))</span>
+                                </div>
+                            </div>
+                        }
+                    </ChildContent>
+                </Card>
+            }
+            
+            @if (editingProduct.Id > 0)
+            {
+                <Card Title="Status" CssClass="mt-4">
+                    <ChildContent>
+                        <div class="form-check">
+                            <InputCheckbox @bind-Value="editingProduct.IsActive" class="form-check-input" id="isActive" />
+                            <label class="form-check-label" for="isActive">Product/Service is active</label>
+                        </div>
+                    </ChildContent>
+                </Card>
+            }
+            
+            <div class="form-actions mt-6">
+                <button type="button" class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-lg" disabled="@isSaving">
+                    @(isSaving ? "Saving..." : "Save Product")
+                </button>
+            </div>
+        </EditForm>
+    </div>
+}
+else
+{
+    @* Product List *@
+    <div class="products-toolbar">
+        <div class="toolbar-left">
+            <div class="search-container" style="width: 300px;">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" placeholder="Search products..." 
+                       @bind="searchTerm" @bind:event="oninput" />
+            </div>
+            <select class="form-control" style="width: 150px;" @bind="filterType">
+                <option value="">All Types</option>
+                <option value="Service">Services</option>
+                <option value="Inventory">Inventory</option>
+                <option value="NonInventory">Non-Inventory</option>
+            </select>
+        </div>
+        <label class="form-check" style="margin: 0;">
+            <input type="checkbox" class="form-check-input" @bind="showInactive" />
+            <span class="form-check-label">Show Inactive</span>
+        </label>
+    </div>
+    
+    <div class="products-summary">
+        <div class="summary-card">
+            <div class="summary-icon">📦</div>
+            <div class="summary-info">
+                <div class="summary-label">Total Products</div>
+                <div class="summary-value">@products.Count(p => p.IsActive)</div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon">🔧</div>
+            <div class="summary-info">
+                <div class="summary-label">Services</div>
+                <div class="summary-value">@products.Count(p => p.IsActive && p.Type == ProductType.Service)</div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon">📊</div>
+            <div class="summary-info">
+                <div class="summary-label">Inventory Value</div>
+                <div class="summary-value">@products.Where(p => p.Type == ProductType.Inventory).Sum(p => p.InventoryValue).ToString("C2")</div>
+            </div>
+        </div>
+        <div class="summary-card @(lowStockCount > 0 ? "warning" : "")">
+            <div class="summary-icon">⚠️</div>
+            <div class="summary-info">
+                <div class="summary-label">Low Stock</div>
+                <div class="summary-value">@lowStockCount</div>
+            </div>
+        </div>
+    </div>
+
+    @if (GetFilteredProducts().Any())
+    {
+        <Card>
+            <ChildContent>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>SKU</th>
+                            <th class="text-right">Price</th>
+                            <th class="text-right">Cost</th>
+                            <th class="text-right">Qty</th>
+                            <th style="width: 100px;">Status</th>
+                            <th style="width: 80px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var product in GetFilteredProducts())
+                        {
+                            <tr class="@(product.IsActive ? "" : "inactive") @(product.NeedsReorder ? "low-stock" : "") cursor-pointer" 
+                                @onclick="() => EditProduct(product)">
+                                <td>
+                                    <div class="product-name">@product.Name</div>
+                                    @if (!string.IsNullOrEmpty(product.Category))
+                                    {
+                                        <div class="product-category">@product.Category</div>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge @GetTypeBadgeClass(product.Type)">@product.TypeDisplay</span>
+                                </td>
+                                <td class="font-mono">@(product.Sku ?? "—")</td>
+                                <td class="text-right font-mono">@product.SalesPrice.ToString("C2")</td>
+                                <td class="text-right font-mono">@product.PurchaseCost.ToString("C2")</td>
+                                <td class="text-right font-mono">
+                                    @if (product.Type == ProductType.Inventory)
+                                    {
+                                        <span class="@(product.NeedsReorder ? "text-warning" : "")">@product.QuantityOnHand</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (product.IsActive)
+                                    {
+                                        <span class="badge badge-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-secondary">Inactive</span>
+                                    }
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-secondary" @onclick:stopPropagation="true" 
+                                            @onclick="() => EditProduct(product)">✏️</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </ChildContent>
+        </Card>
+    }
+    else
+    {
+        <Card>
+            <ChildContent>
+                <div class="empty-state">
+                    <span class="empty-state-icon">📦</span>
+                    <div class="empty-state-title">No products found</div>
+                    <div class="empty-state-description">
+                        @if (string.IsNullOrEmpty(searchTerm))
+                        {
+                            <span>Add your first product or service to start creating invoices.</span>
+                        }
+                        else
+                        {
+                            <span>No products match your search criteria.</span>
+                        }
+                    </div>
+                    <button class="btn btn-primary" @onclick="CreateNewProduct">+ Add Product</button>
+                </div>
+            </ChildContent>
+        </Card>
+    }
+}
+
+<style>
+    .product-form-container { max-width: 800px; }
+    
+    .products-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-4);
+        gap: var(--space-4);
+        flex-wrap: wrap;
+    }
+    
+    .toolbar-left {
+        display: flex;
+        gap: var(--space-3);
+        align-items: center;
+    }
+    
+    .products-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: var(--space-4);
+        margin-bottom: var(--space-4);
+    }
+    
+    .summary-card {
+        background: var(--bg-primary);
+        border-radius: var(--radius-lg);
+        padding: var(--space-4);
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        border: 1px solid var(--border-color);
+    }
+    
+    .summary-card.warning { border-color: var(--warning-color); background: var(--warning-light); }
+    
+    .summary-icon { font-size: var(--text-2xl); }
+    .summary-label { font-size: var(--text-sm); color: var(--text-secondary); }
+    .summary-value { font-size: var(--text-xl); font-weight: var(--font-semibold); }
+    
+    .form-row { display: flex; gap: var(--space-4); flex-wrap: wrap; }
+    .form-row .form-group { min-width: 120px; }
+    
+    .form-actions {
+        display: flex;
+        gap: var(--space-3);
+        justify-content: flex-end;
+        padding-top: var(--space-4);
+        border-top: 1px solid var(--border-color);
+    }
+    
+    .product-name { font-weight: var(--font-medium); }
+    .product-category { font-size: var(--text-xs); color: var(--text-muted); }
+    
+    .inventory-summary {
+        padding: var(--space-3);
+        background: var(--bg-secondary);
+        border-radius: var(--radius-md);
+    }
+    
+    .summary-item { display: flex; justify-content: space-between; }
+    
+    tr.inactive { opacity: 0.6; }
+    tr.low-stock td:first-child { border-left: 3px solid var(--warning-color); }
+</style>
+
+@code {
+    [Parameter]
+    public int? ProductId { get; set; }
+    
+    private List<Product> products = new();
+    private List<Account> incomeAccounts = new();
+    private List<Account> expenseAccounts = new();
+    private List<Account> assetAccounts = new();
+    private List<string> categories = new();
+    private Product? editingProduct;
+    private bool isLoading = true;
+    private bool isEditing = false;
+    private bool isSaving = false;
+    private string searchTerm = "";
+    private string filterType = "";
+    private bool showInactive = false;
+    private string? errorMessage;
+    private int lowStockCount => products.Count(p => p.NeedsReorder);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+        
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        if (uri.AbsolutePath.EndsWith("/new", StringComparison.OrdinalIgnoreCase))
+        {
+            CreateNewProduct();
+        }
+        else if (ProductId.HasValue && ProductId.Value > 0)
+        {
+            var product = products.FirstOrDefault(p => p.Id == ProductId.Value);
+            if (product != null)
+            {
+                EditProduct(product);
+            }
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        isLoading = true;
+        try
+        {
+            products = (await ProductService.GetAllAsync()).ToList();
+            incomeAccounts = (await AccountService.GetAccountsByTypeAsync(AccountType.Income)).ToList();
+            expenseAccounts = (await AccountService.GetAccountsByTypeAsync(AccountType.Expense)).ToList();
+            assetAccounts = (await AccountService.GetAccountsByTypeAsync(AccountType.Asset)).ToList();
+            categories = (await ProductService.GetCategoriesAsync()).ToList();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private IEnumerable<Product> GetFilteredProducts()
+    {
+        var filtered = products.AsEnumerable();
+        
+        if (!showInactive)
+            filtered = filtered.Where(p => p.IsActive);
+        
+        if (!string.IsNullOrEmpty(filterType))
+        {
+            filtered = filterType switch
+            {
+                "Service" => filtered.Where(p => p.Type == ProductType.Service),
+                "Inventory" => filtered.Where(p => p.Type == ProductType.Inventory),
+                "NonInventory" => filtered.Where(p => p.Type == ProductType.NonInventory),
+                _ => filtered
+            };
+        }
+        
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.ToLower();
+            filtered = filtered.Where(p =>
+                p.Name.ToLower().Contains(term) ||
+                (p.Sku?.ToLower().Contains(term) ?? false) ||
+                (p.Category?.ToLower().Contains(term) ?? false));
+        }
+        
+        return filtered.OrderBy(p => p.Name);
+    }
+
+    private void CreateNewProduct()
+    {
+        editingProduct = new Product
+        {
+            Type = ProductType.Service,
+            IsSellable = true,
+            IsPurchasable = false,
+            IsTaxable = true,
+            IsActive = true,
+            UnitOfMeasure = "Each"
+        };
+        isEditing = true;
+        errorMessage = null;
+    }
+
+    private void EditProduct(Product product)
+    {
+        editingProduct = new Product
+        {
+            Id = product.Id,
+            Name = product.Name,
+            Sku = product.Sku,
+            Description = product.Description,
+            Type = product.Type,
+            Category = product.Category,
+            UnitOfMeasure = product.UnitOfMeasure,
+            IsSellable = product.IsSellable,
+            SalesDescription = product.SalesDescription,
+            SalesPrice = product.SalesPrice,
+            IncomeAccountId = product.IncomeAccountId,
+            IsPurchasable = product.IsPurchasable,
+            PurchaseDescription = product.PurchaseDescription,
+            PurchaseCost = product.PurchaseCost,
+            ExpenseAccountId = product.ExpenseAccountId,
+            PreferredVendorId = product.PreferredVendorId,
+            QuantityOnHand = product.QuantityOnHand,
+            ReorderPoint = product.ReorderPoint,
+            ReorderQuantity = product.ReorderQuantity,
+            AverageCost = product.AverageCost,
+            InventoryAssetAccountId = product.InventoryAssetAccountId,
+            IsTaxable = product.IsTaxable,
+            TaxRate = product.TaxRate,
+            IsActive = product.IsActive
+        };
+        isEditing = true;
+        errorMessage = null;
+    }
+
+    private void CancelEdit()
+    {
+        isEditing = false;
+        editingProduct = null;
+        errorMessage = null;
+        Navigation.NavigateTo("/products");
+    }
+
+    private async Task SaveProductAsync()
+    {
+        if (editingProduct == null) return;
+        
+        isSaving = true;
+        errorMessage = null;
+        
+        try
+        {
+            if (editingProduct.Id > 0)
+            {
+                await ProductService.UpdateAsync(editingProduct);
+            }
+            else
+            {
+                await ProductService.CreateAsync(editingProduct);
+            }
+            
+            await LoadDataAsync();
+            CancelEdit();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving product: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private string GetTypeBadgeClass(ProductType type) => type switch
+    {
+        ProductType.Service => "badge-info",
+        ProductType.Inventory => "badge-success",
+        ProductType.NonInventory => "badge-secondary",
+        _ => "badge-secondary"
+    };
+
+    private string GetPageTitle()
+    {
+        if (isEditing)
+            return editingProduct?.Id > 0 ? "Edit Product" : "New Product/Service";
+        return "Products & Services";
+    }
+
+    private string GetPageSubtitle()
+    {
+        if (isEditing)
+            return editingProduct?.Id > 0 ? $"Editing {editingProduct.Name}" : "Add a new product or service";
+        return "Manage your products, services, and inventory";
+    }
+}

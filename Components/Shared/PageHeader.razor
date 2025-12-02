@@ -1,0 +1,26 @@
+@* Reusable page header component *@
+
+<div class="page-header">
+    <h1 class="page-title">@Title</h1>
+    @if (!string.IsNullOrEmpty(Subtitle))
+    {
+        <p class="page-subtitle">@Subtitle</p>
+    }
+    @if (ActionContent != null)
+    {
+        <div class="page-actions">
+            @ActionContent
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? Subtitle { get; set; }
+
+    [Parameter]
+    public RenderFragment? ActionContent { get; set; }
+}

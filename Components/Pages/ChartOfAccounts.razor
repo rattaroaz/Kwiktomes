@@ -1,0 +1,585 @@
+@page "/chart-of-accounts"
+@inject IAccountService AccountService
+
+<PageHeader Title="Chart of Accounts" Subtitle="Manage your accounts for tracking finances">
+    <ActionContent>
+        <button class="btn btn-primary" @onclick="() => ShowAddAccountModal()">
+            + New Account
+        </button>
+    </ActionContent>
+</PageHeader>
+
+@if (isLoading)
+{
+    <LoadingSpinner Text="Loading accounts..." />
+}
+else
+{
+    <div class="accounts-toolbar">
+        <div class="search-filter">
+            <div class="search-container">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" placeholder="Search accounts..." 
+                       @bind="searchTerm" @bind:event="oninput" />
+            </div>
+            <select class="form-control" style="width: auto;" @bind="filterType">
+                <option value="">All Types</option>
+                @foreach (var type in Enum.GetValues<AccountType>())
+                {
+                    <option value="@type">@type</option>
+                }
+            </select>
+            <label class="form-check" style="margin: 0;">
+                <input type="checkbox" class="form-check-input" @bind="showInactive" />
+                <span class="form-check-label">Show Inactive</span>
+            </label>
+        </div>
+    </div>
+
+    <div class="accounts-summary">
+        @foreach (var type in Enum.GetValues<AccountType>())
+        {
+            var typeAccounts = GetFilteredAccounts().Where(a => a.AccountType == type).ToList();
+            var total = typeAccounts.Sum(a => a.Balance);
+            <div class="summary-card @type.ToString().ToLower()">
+                <div class="summary-icon">@GetTypeIcon(type)</div>
+                <div class="summary-info">
+                    <div class="summary-label">@type</div>
+                    <div class="summary-value">@FormatCurrency(total)</div>
+                </div>
+                <div class="summary-count">@typeAccounts.Count accounts</div>
+            </div>
+        }
+    </div>
+
+    @foreach (var type in Enum.GetValues<AccountType>())
+    {
+        var typeAccounts = GetFilteredAccounts()
+            .Where(a => a.AccountType == type && a.ParentAccountId == null)
+            .ToList();
+        
+        if (typeAccounts.Any() || string.IsNullOrEmpty(filterType) || filterType == type.ToString())
+        {
+            <Card Title="@GetTypeTitle(type)" CssClass="@GetCardCssClass(type)">
+                <HeaderContent>
+                    <span class="type-icon">@GetTypeIcon(type)</span>
+                </HeaderContent>
+                <ChildContent>
+                    @if (typeAccounts.Any())
+                    {
+                        <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 120px;">Number</th>
+                                <th>Account Name</th>
+                                <th>Type</th>
+                                <th class="text-right" style="width: 150px;">Balance</th>
+                                <th style="width: 100px;">Status</th>
+                                <th style="width: 80px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var account in typeAccounts)
+                            {
+                                <tr class="@(account.IsActive ? "" : "inactive")">
+                                    <td class="font-mono">@account.AccountNumber</td>
+                                    <td>
+                                        <div class="account-name">
+                                            @account.Name
+                                            @if (account.IsSystemAccount)
+                                            {
+                                                <span class="badge badge-secondary ml-2">System</span>
+                                            }
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(account.Description))
+                                        {
+                                            <div class="account-description">@account.Description</div>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-info">@FormatSubType(account.SubType)</span>
+                                    </td>
+                                    <td class="text-right font-mono @(account.Balance >= 0 ? "" : "text-danger")">
+                                        @FormatCurrency(account.Balance)
+                                    </td>
+                                    <td>
+                                        @if (account.IsActive)
+                                        {
+                                            <span class="badge badge-success">Active</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-secondary">Inactive</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="btn btn-sm btn-secondary" title="Edit" 
+                                                    @onclick="() => EditAccount(account)">
+                                                ✏️
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @* Sub-accounts *@
+                                @foreach (var subAccount in GetFilteredAccounts().Where(a => a.ParentAccountId == account.Id))
+                                {
+                                    <tr class="sub-account @(subAccount.IsActive ? "" : "inactive")">
+                                        <td class="font-mono pl-4">↳ @subAccount.AccountNumber</td>
+                                        <td class="pl-4">
+                                            <div class="account-name">@subAccount.Name</div>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-info">@FormatSubType(subAccount.SubType)</span>
+                                        </td>
+                                        <td class="text-right font-mono @(subAccount.Balance >= 0 ? "" : "text-danger")">
+                                            @FormatCurrency(subAccount.Balance)
+                                        </td>
+                                        <td>
+                                            @if (subAccount.IsActive)
+                                            {
+                                                <span class="badge badge-success">Active</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge badge-secondary">Inactive</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-secondary" title="Edit"
+                                                    @onclick="() => EditAccount(subAccount)">
+                                                ✏️
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="empty-state p-4">
+                        <span class="empty-state-icon">@GetTypeIcon(type)</span>
+                        <div class="empty-state-title">No @type.ToString().ToLower() accounts</div>
+                        <button class="btn btn-primary btn-sm" @onclick="() => ShowAddAccountModal(type)">
+                            + Add @type Account
+                        </button>
+                    </div>
+                    }
+                </ChildContent>
+            </Card>
+        }
+    }
+}
+
+@* Account Modal *@
+@if (showModal)
+{
+    <div class="modal-backdrop show" @onclick="CloseModal"></div>
+    <div class="modal show">
+        <div class="modal-header">
+            <h3 class="modal-title">@(editingAccount?.Id > 0 ? "Edit Account" : "New Account")</h3>
+            <button class="modal-close" @onclick="CloseModal">×</button>
+        </div>
+        <EditForm Model="editingAccount" OnValidSubmit="SaveAccountAsync">
+            <DataAnnotationsValidator />
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label form-label-required">Account Type</label>
+                    <InputSelect @bind-Value="editingAccount!.AccountType" class="form-control"
+                                 disabled="@(editingAccount.Id > 0)">
+                        @foreach (var type in Enum.GetValues<AccountType>())
+                        {
+                            <option value="@type">@type</option>
+                        }
+                    </InputSelect>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label form-label-required">Sub-Type</label>
+                    <InputSelect @bind-Value="editingAccount!.SubType" class="form-control">
+                        @foreach (var subType in GetSubTypesForType(editingAccount.AccountType))
+                        {
+                            <option value="@subType">@FormatSubType(subType)</option>
+                        }
+                    </InputSelect>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group" style="width: 150px;">
+                        <label class="form-label form-label-required">Account Number</label>
+                        <InputText @bind-Value="editingAccount!.AccountNumber" class="form-control" />
+                        <ValidationMessage For="() => editingAccount!.AccountNumber" />
+                    </div>
+                    <div class="form-group flex-1">
+                        <label class="form-label form-label-required">Account Name</label>
+                        <InputText @bind-Value="editingAccount!.Name" class="form-control" />
+                        <ValidationMessage For="() => editingAccount!.Name" />
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <InputTextArea @bind-Value="editingAccount!.Description" class="form-control" rows="2" />
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Parent Account (Optional)</label>
+                    <InputSelect @bind-Value="editingAccount!.ParentAccountId" class="form-control">
+                        <option value="">-- No Parent (Top Level) --</option>
+                        @foreach (var parent in accounts.Where(a => a.AccountType == editingAccount.AccountType && a.Id != editingAccount.Id && a.ParentAccountId == null))
+                        {
+                            <option value="@parent.Id">@parent.AccountNumber - @parent.Name</option>
+                        }
+                    </InputSelect>
+                </div>
+                
+                @if (editingAccount.Id > 0)
+                {
+                    <div class="form-group">
+                        <label class="form-check">
+                            <InputCheckbox @bind-Value="editingAccount!.IsActive" class="form-check-input" />
+                            <span class="form-check-label">Account is active</span>
+                        </label>
+                    </div>
+                }
+                
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger">@errorMessage</div>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                    @(isSaving ? "Saving..." : "Save Account")
+                </button>
+            </div>
+        </EditForm>
+    </div>
+}
+
+<style>
+    .accounts-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-4);
+        flex-wrap: wrap;
+        gap: var(--space-3);
+    }
+    
+    .search-filter {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        flex-wrap: wrap;
+    }
+    
+    .accounts-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--space-4);
+        margin-bottom: var(--space-4);
+    }
+    
+    .summary-card {
+        background: var(--bg-primary);
+        border-radius: var(--radius-lg);
+        padding: var(--space-4);
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .summary-card.asset { border-left: 4px solid #3b82f6; }
+    .summary-card.liability { border-left: 4px solid #ef4444; }
+    .summary-card.equity { border-left: 4px solid #8b5cf6; }
+    .summary-card.income { border-left: 4px solid #10b981; }
+    .summary-card.expense { border-left: 4px solid #f59e0b; }
+    
+    .summary-icon {
+        font-size: var(--text-2xl);
+    }
+    
+    .summary-info {
+        flex: 1;
+    }
+    
+    .summary-label {
+        font-size: var(--text-sm);
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .summary-value {
+        font-size: var(--text-xl);
+        font-weight: var(--font-semibold);
+        font-family: var(--font-mono);
+    }
+    
+    .summary-count {
+        font-size: var(--text-sm);
+        color: var(--text-muted);
+    }
+    
+    .account-type-card.asset .card-header { border-left: 4px solid #3b82f6; }
+    .account-type-card.liability .card-header { border-left: 4px solid #ef4444; }
+    .account-type-card.equity .card-header { border-left: 4px solid #8b5cf6; }
+    .account-type-card.income .card-header { border-left: 4px solid #10b981; }
+    .account-type-card.expense .card-header { border-left: 4px solid #f59e0b; }
+    
+    .type-icon {
+        font-size: var(--text-xl);
+        margin-right: var(--space-2);
+    }
+    
+    .account-name {
+        font-weight: var(--font-medium);
+    }
+    
+    .account-description {
+        font-size: var(--text-sm);
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+    
+    .sub-account td {
+        background-color: var(--bg-tertiary);
+    }
+    
+    .sub-account td:first-child {
+        padding-left: var(--space-6);
+    }
+    
+    tr.inactive {
+        opacity: 0.6;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: var(--space-1);
+    }
+    
+    .form-row {
+        display: flex;
+        gap: var(--space-4);
+    }
+    
+    .pl-4 {
+        padding-left: var(--space-4) !important;
+    }
+</style>
+
+@code {
+    private List<Account> accounts = new();
+    private Account? editingAccount;
+    private bool isLoading = true;
+    private bool showModal = false;
+    private bool isSaving = false;
+    private string searchTerm = "";
+    private string filterType = "";
+    private bool showInactive = false;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAccountsAsync();
+    }
+
+    private async Task LoadAccountsAsync()
+    {
+        isLoading = true;
+        try
+        {
+            accounts = (await AccountService.GetAllAsync()).ToList();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private IEnumerable<Account> GetFilteredAccounts()
+    {
+        var filtered = accounts.AsEnumerable();
+        
+        if (!showInactive)
+            filtered = filtered.Where(a => a.IsActive);
+        
+        if (!string.IsNullOrEmpty(filterType) && Enum.TryParse<AccountType>(filterType, out var type))
+            filtered = filtered.Where(a => a.AccountType == type);
+        
+        if (!string.IsNullOrEmpty(searchTerm))
+        {
+            var term = searchTerm.ToLower();
+            filtered = filtered.Where(a => 
+                a.Name.ToLower().Contains(term) || 
+                a.AccountNumber.ToLower().Contains(term) ||
+                (a.Description?.ToLower().Contains(term) ?? false));
+        }
+        
+        return filtered;
+    }
+
+    private void ShowAddAccountModal(AccountType? type = null)
+    {
+        editingAccount = new Account
+        {
+            AccountType = type ?? AccountType.Asset,
+            SubType = GetDefaultSubType(type ?? AccountType.Asset),
+            IsActive = true
+        };
+        errorMessage = null;
+        showModal = true;
+    }
+
+    private void EditAccount(Account account)
+    {
+        editingAccount = new Account
+        {
+            Id = account.Id,
+            AccountNumber = account.AccountNumber,
+            Name = account.Name,
+            Description = account.Description,
+            AccountType = account.AccountType,
+            SubType = account.SubType,
+            ParentAccountId = account.ParentAccountId,
+            Balance = account.Balance,
+            IsActive = account.IsActive,
+            IsSystemAccount = account.IsSystemAccount,
+            DisplayOrder = account.DisplayOrder
+        };
+        errorMessage = null;
+        showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+        editingAccount = null;
+        errorMessage = null;
+    }
+
+    private async Task SaveAccountAsync()
+    {
+        if (editingAccount == null) return;
+        
+        isSaving = true;
+        errorMessage = null;
+        
+        try
+        {
+            // Validate account number uniqueness
+            if (await AccountService.AccountNumberExistsAsync(editingAccount.AccountNumber, 
+                editingAccount.Id > 0 ? editingAccount.Id : null))
+            {
+                errorMessage = "An account with this number already exists.";
+                return;
+            }
+            
+            if (editingAccount.Id > 0)
+            {
+                await AccountService.UpdateAsync(editingAccount);
+            }
+            else
+            {
+                await AccountService.CreateAsync(editingAccount);
+            }
+            
+            await LoadAccountsAsync();
+            CloseModal();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving account: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private string GetTypeIcon(AccountType type) => type switch
+    {
+        AccountType.Asset => "💰",
+        AccountType.Liability => "📋",
+        AccountType.Equity => "🏦",
+        AccountType.Income => "📈",
+        AccountType.Expense => "📉",
+        _ => "📊"
+    };
+
+    private string GetTypeTitle(AccountType type) => type switch
+    {
+        AccountType.Asset => "Assets",
+        AccountType.Liability => "Liabilities",
+        AccountType.Equity => "Equity",
+        AccountType.Income => "Income",
+        AccountType.Expense => "Expenses",
+        _ => type.ToString()
+    };
+
+    private string GetCardCssClass(AccountType type)
+    {
+        return $"mt-4 account-type-card {type.ToString().ToLower()}";
+    }
+
+    private string FormatSubType(AccountSubType subType)
+    {
+        return System.Text.RegularExpressions.Regex.Replace(
+            subType.ToString(), 
+            "([a-z])([A-Z])", 
+            "$1 $2"
+        );
+    }
+
+    private string FormatCurrency(decimal amount)
+    {
+        return amount.ToString("C2");
+    }
+
+    private AccountSubType GetDefaultSubType(AccountType type) => type switch
+    {
+        AccountType.Asset => AccountSubType.Bank,
+        AccountType.Liability => AccountSubType.CurrentLiability,
+        AccountType.Equity => AccountSubType.OwnersEquity,
+        AccountType.Income => AccountSubType.Sales,
+        AccountType.Expense => AccountSubType.OperatingExpense,
+        _ => AccountSubType.OtherAsset
+    };
+
+    private IEnumerable<AccountSubType> GetSubTypesForType(AccountType type)
+    {
+        return type switch
+        {
+            AccountType.Asset => new[] { 
+                AccountSubType.Cash, AccountSubType.Bank, AccountSubType.AccountsReceivable,
+                AccountSubType.Inventory, AccountSubType.FixedAsset, 
+                AccountSubType.OtherCurrentAsset, AccountSubType.OtherAsset 
+            },
+            AccountType.Liability => new[] { 
+                AccountSubType.AccountsPayable, AccountSubType.CreditCard,
+                AccountSubType.CurrentLiability, AccountSubType.LongTermLiability, 
+                AccountSubType.OtherLiability 
+            },
+            AccountType.Equity => new[] { 
+                AccountSubType.OwnersEquity, AccountSubType.RetainedEarnings, 
+                AccountSubType.OpeningBalance 
+            },
+            AccountType.Income => new[] { 
+                AccountSubType.Sales, AccountSubType.ServiceIncome, 
+                AccountSubType.OtherIncome 
+            },
+            AccountType.Expense => new[] { 
+                AccountSubType.CostOfGoodsSold, AccountSubType.OperatingExpense,
+                AccountSubType.Payroll, AccountSubType.OtherExpense 
+            },
+            _ => Array.Empty<AccountSubType>()
+        };
+    }
+}

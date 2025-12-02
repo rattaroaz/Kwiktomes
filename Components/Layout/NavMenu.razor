@@ -1,0 +1,145 @@
+@* Sidebar navigation menu component *@
+
+<div class="sidebar @(IsCollapsed ? "collapsed" : "")">
+    <div class="sidebar-header">
+        <div class="brand">
+            <span class="brand-icon">📚</span>
+            @if (!IsCollapsed)
+            {
+                <span class="brand-text">KwikBooks</span>
+            }
+        </div>
+        <button class="collapse-btn" @onclick="ToggleCollapse" title="@(IsCollapsed ? "Expand" : "Collapse")">
+            <span class="collapse-icon">@(IsCollapsed ? "→" : "←")</span>
+        </button>
+    </div>
+
+    <nav class="sidebar-nav">
+        <div class="nav-section">
+            <NavLink class="nav-item" href="" Match="NavLinkMatch.All">
+                <span class="nav-icon">🏠</span>
+                @if (!IsCollapsed)
+                {
+                    <span class="nav-text">Dashboard</span>
+                }
+            </NavLink>
+        </div>
+
+        <div class="nav-section">
+            @if (!IsCollapsed)
+            {
+                <div class="nav-section-title">SALES</div>
+            }
+            <NavLink class="nav-item" href="customers">
+                <span class="nav-icon">👥</span>
+                @if (!IsCollapsed)
+                {
+                    <span class="nav-text">Customers</span>
+                }
+            </NavLink>
+            <NavLink class="nav-item" href="invoices">
+                <span class="nav-icon">📄</span>
+                @if (!IsCollapsed)
+                {
+                    <span class="nav-text">Invoices</span>
+                }
+            </NavLink>
+            <NavLink class="nav-item" href="products">
+                <span class="nav-icon">📦</span>
+                @if (!IsCollapsed)
+                {
+                    <span class="nav-text">Products & Services</span>
+                }
+            </NavLink>
+        </div>
+
+        <div class="nav-section">
+            @if (!IsCollapsed)
+            {
+                <div class="nav-section-title">EXPENSES</div>
+            }
+            <NavLink class="nav-item" href="vendors">
+                <span class="nav-icon">🏪</span>
+                @if (!IsCollapsed)
+                {
+                    <span class="nav-text">Vendors</span>
+                }
+            </NavLink>
+            <NavLink class="nav-item" href="bills">
+                <span class="nav-icon">🧾</span>
+                @if (!IsCollapsed)
+                {
+                    <span class="nav-text">Bills</span>
+                }
+            </NavLink>
+            <NavLink class="nav-item" href="expenses">
+                <span class="nav-icon">💳</span>
+                @if (!IsCollapsed)
+                {
+                    <span class="nav-text">Expenses</span>
+                }
+            </NavLink>
+        </div>
+
+        <div class="nav-section">
+            @if (!IsCollapsed)
+            {
+                <div class="nav-section-title">ACCOUNTING</div>
+            }
+            <NavLink class="nav-item" href="chart-of-accounts">
+                <span class="nav-icon">📊</span>
+                @if (!IsCollapsed)
+                {
+                    <span class="nav-text">Chart of Accounts</span>
+                }
+            </NavLink>
+            <NavLink class="nav-item" href="journal-entries">
+                <span class="nav-icon">📝</span>
+                @if (!IsCollapsed)
+                {
+                    <span class="nav-text">Journal Entries</span>
+                }
+            </NavLink>
+            <NavLink class="nav-item" href="banking">
+                <span class="nav-icon">🏦</span>
+                @if (!IsCollapsed)
+                {
+                    <span class="nav-text">Banking</span>
+                }
+            </NavLink>
+        </div>
+
+        <div class="nav-section">
+            @if (!IsCollapsed)
+            {
+                <div class="nav-section-title">REPORTS</div>
+            }
+            <NavLink class="nav-item" href="reports">
+                <span class="nav-icon">📈</span>
+                @if (!IsCollapsed)
+                {
+                    <span class="nav-text">Reports</span>
+                }
+            </NavLink>
+        </div>
+    </nav>
+
+    <div class="sidebar-footer">
+        <NavLink class="nav-item" href="settings">
+            <span class="nav-icon">⚙️</span>
+            @if (!IsCollapsed)
+            {
+                <span class="nav-text">Settings</span>
+            }
+        </NavLink>
+    </div>
+</div>
+
+@code {
+    private bool IsCollapsed { get; set; } = false;
+
+    private void ToggleCollapse()
+    {
+        IsCollapsed = !IsCollapsed;
+    }
+}

@@ -1,0 +1,785 @@
+﻿@page "/"
+@inject IDashboardService DashboardService
+@inject ICompanyService CompanyService
+
+<PageHeader Title="Dashboard" Subtitle="@GetGreeting()" />
+
+@if (isLoading)
+{
+    <LoadingSpinner Text="Loading dashboard..." />
+}
+else if (data != null)
+{
+    @* Key Metrics Row *@
+    <div class="dashboard-stats">
+        <div class="stat-widget revenue">
+            <div class="stat-widget-header">
+                <span class="stat-widget-title">Total Revenue</span>
+                <span class="stat-widget-icon">💰</span>
+            </div>
+            <div class="stat-widget-value">@data.TotalRevenue.ToString("C0")</div>
+            <div class="stat-widget-change @(data.RevenueChange >= 0 ? "positive" : "negative")">
+                <span>@(data.RevenueChange >= 0 ? "↑" : "↓") @Math.Abs(data.RevenueChange).ToString("N1")%</span>
+                <span>vs last month</span>
+            </div>
+        </div>
+
+        <div class="stat-widget expenses">
+            <div class="stat-widget-header">
+                <span class="stat-widget-title">Total Expenses</span>
+                <span class="stat-widget-icon">📉</span>
+            </div>
+            <div class="stat-widget-value">@data.TotalExpenses.ToString("C0")</div>
+            <div class="stat-widget-change @(data.ExpenseChange <= 0 ? "positive" : "negative")">
+                <span>@(data.ExpenseChange >= 0 ? "↑" : "↓") @Math.Abs(data.ExpenseChange).ToString("N1")%</span>
+                <span>vs last month</span>
+            </div>
+        </div>
+
+        <div class="stat-widget profit @(data.NetProfit >= 0 ? "positive-bg" : "negative-bg")">
+            <div class="stat-widget-header">
+                <span class="stat-widget-title">Net Profit</span>
+                <span class="stat-widget-icon">📊</span>
+            </div>
+            <div class="stat-widget-value">@data.NetProfit.ToString("C0")</div>
+            <div class="stat-widget-change">
+                <span>@data.ProfitMargin.ToString("N1")% margin</span>
+            </div>
+        </div>
+
+        <div class="stat-widget cash">
+            <div class="stat-widget-header">
+                <span class="stat-widget-title">Cash & Bank</span>
+                <span class="stat-widget-icon">🏦</span>
+            </div>
+            <div class="stat-widget-value">@data.TotalCashAndBank.ToString("C0")</div>
+            <div class="stat-widget-change">
+                <span>Available balance</span>
+            </div>
+        </div>
+    </div>
+
+    @* Two-Column Layout *@
+    <div class="dashboard-grid-2col">
+        @* Left Column *@
+        <div class="dashboard-column">
+            @* Accounts Receivable *@
+            <Card Title="Accounts Receivable" CssClass="dashboard-card">
+                <HeaderContent>
+                    <span class="card-header-value">@data.TotalReceivables.ToString("C0")</span>
+                </HeaderContent>
+                <ChildContent>
+                    <div class="receivables-summary">
+                        <div class="summary-row">
+                            <span class="summary-label">Open Invoices</span>
+                            <span class="summary-value">@data.OpenInvoiceCount</span>
+                        </div>
+                        @if (data.OverdueInvoiceCount > 0)
+                        {
+                            <div class="summary-row warning">
+                                <span class="summary-label">⚠️ Overdue</span>
+                                <span class="summary-value">@data.OverdueInvoiceCount (@data.OverdueAmount.ToString("C0"))</span>
+                            </div>
+                        }
+                    </div>
+                    @if (data.ReceivablesAging.Total > 0)
+                    {
+                        <div class="aging-bar">
+                            @{ var arTotal = data.ReceivablesAging.Total; }
+                            @if (data.ReceivablesAging.Current > 0)
+                            {
+                                <div class="aging-segment current" style="width: @((data.ReceivablesAging.Current / arTotal * 100).ToString("N0"))%" 
+                                     title="Current: @data.ReceivablesAging.Current.ToString("C0")"></div>
+                            }
+                            @if (data.ReceivablesAging.Days1To30 > 0)
+                            {
+                                <div class="aging-segment days-30" style="width: @((data.ReceivablesAging.Days1To30 / arTotal * 100).ToString("N0"))%"
+                                     title="1-30 days: @data.ReceivablesAging.Days1To30.ToString("C0")"></div>
+                            }
+                            @if (data.ReceivablesAging.Days31To60 > 0)
+                            {
+                                <div class="aging-segment days-60" style="width: @((data.ReceivablesAging.Days31To60 / arTotal * 100).ToString("N0"))%"
+                                     title="31-60 days: @data.ReceivablesAging.Days31To60.ToString("C0")"></div>
+                            }
+                            @if (data.ReceivablesAging.Days61To90 > 0)
+                            {
+                                <div class="aging-segment days-90" style="width: @((data.ReceivablesAging.Days61To90 / arTotal * 100).ToString("N0"))%"
+                                     title="61-90 days: @data.ReceivablesAging.Days61To90.ToString("C0")"></div>
+                            }
+                            @if (data.ReceivablesAging.Over90Days > 0)
+                            {
+                                <div class="aging-segment over-90" style="width: @((data.ReceivablesAging.Over90Days / arTotal * 100).ToString("N0"))%"
+                                     title="90+ days: @data.ReceivablesAging.Over90Days.ToString("C0")"></div>
+                            }
+                        </div>
+                        <div class="aging-legend">
+                            <span class="legend-item"><span class="dot current"></span> Current</span>
+                            <span class="legend-item"><span class="dot days-30"></span> 1-30</span>
+                            <span class="legend-item"><span class="dot days-60"></span> 31-60</span>
+                            <span class="legend-item"><span class="dot days-90"></span> 61-90</span>
+                            <span class="legend-item"><span class="dot over-90"></span> 90+</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="no-data">No outstanding receivables</div>
+                    }
+                </ChildContent>
+            </Card>
+
+            @* Accounts Payable *@
+            <Card Title="Accounts Payable" CssClass="dashboard-card mt-4">
+                <HeaderContent>
+                    <span class="card-header-value">@data.TotalPayables.ToString("C0")</span>
+                </HeaderContent>
+                <ChildContent>
+                    <div class="payables-summary">
+                        <div class="summary-row">
+                            <span class="summary-label">Open Bills</span>
+                            <span class="summary-value">@data.OpenBillCount</span>
+                        </div>
+                        @if (data.OverdueBillCount > 0)
+                        {
+                            <div class="summary-row warning">
+                                <span class="summary-label">⚠️ Overdue</span>
+                                <span class="summary-value">@data.OverdueBillCount (@data.OverduePayablesAmount.ToString("C0"))</span>
+                            </div>
+                        }
+                    </div>
+                    @if (data.PayablesAging.Total > 0)
+                    {
+                        <div class="aging-bar payables">
+                            @{ var apTotal = data.PayablesAging.Total; }
+                            @if (data.PayablesAging.Current > 0)
+                            {
+                                <div class="aging-segment current" style="width: @((data.PayablesAging.Current / apTotal * 100).ToString("N0"))%"></div>
+                            }
+                            @if (data.PayablesAging.Days1To30 > 0)
+                            {
+                                <div class="aging-segment days-30" style="width: @((data.PayablesAging.Days1To30 / apTotal * 100).ToString("N0"))%"></div>
+                            }
+                            @if (data.PayablesAging.Days31To60 > 0)
+                            {
+                                <div class="aging-segment days-60" style="width: @((data.PayablesAging.Days31To60 / apTotal * 100).ToString("N0"))%"></div>
+                            }
+                            @if (data.PayablesAging.Days61To90 > 0)
+                            {
+                                <div class="aging-segment days-90" style="width: @((data.PayablesAging.Days61To90 / apTotal * 100).ToString("N0"))%"></div>
+                            }
+                            @if (data.PayablesAging.Over90Days > 0)
+                            {
+                                <div class="aging-segment over-90" style="width: @((data.PayablesAging.Over90Days / apTotal * 100).ToString("N0"))%"></div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="no-data">No outstanding payables</div>
+                    }
+                </ChildContent>
+            </Card>
+
+            @* Business Snapshot *@
+            <Card Title="Business Snapshot" CssClass="dashboard-card mt-4">
+                <ChildContent>
+                    <div class="snapshot-grid">
+                        <a href="/customers" class="snapshot-item">
+                            <span class="snapshot-icon">👥</span>
+                            <span class="snapshot-value">@data.CustomerCount</span>
+                            <span class="snapshot-label">Customers</span>
+                        </a>
+                        <a href="/vendors" class="snapshot-item">
+                            <span class="snapshot-icon">🏪</span>
+                            <span class="snapshot-value">@data.VendorCount</span>
+                            <span class="snapshot-label">Vendors</span>
+                        </a>
+                        <a href="/products" class="snapshot-item">
+                            <span class="snapshot-icon">📦</span>
+                            <span class="snapshot-value">@data.ProductCount</span>
+                            <span class="snapshot-label">Products</span>
+                        </a>
+                        <a href="/products?filter=lowstock" class="snapshot-item @(data.LowStockCount > 0 ? "warning" : "")">
+                            <span class="snapshot-icon">⚠️</span>
+                            <span class="snapshot-value">@data.LowStockCount</span>
+                            <span class="snapshot-label">Low Stock</span>
+                        </a>
+                    </div>
+                    @if (data.InventoryValue > 0)
+                    {
+                        <div class="inventory-value">
+                            <span>Inventory Value:</span>
+                            <strong>@data.InventoryValue.ToString("C0")</strong>
+                        </div>
+                    }
+                </ChildContent>
+            </Card>
+
+            @* Profit & Loss Summary *@
+            <Card Title="Profit & Loss Summary" CssClass="dashboard-card mt-4">
+                <ChildContent>
+                    @if (data.PLIncomeCategories.Any() || data.PLExpenseCategories.Any())
+                    {
+                        <div class="pl-summary">
+                            @if (data.PLIncomeCategories.Any())
+                            {
+                                <div class="pl-section">
+                                    <div class="pl-section-header income">
+                                        <span class="pl-section-title">Revenue</span>
+                                        <span class="pl-section-total">@data.PLIncomeCategories.Sum(c => c.Total).ToString("C0")</span>
+                                    </div>
+                                    @foreach (var category in data.PLIncomeCategories.OrderByDescending(c => c.Total).Take(3))
+                                    {
+                                        <div class="pl-category">
+                                            <span class="pl-category-name">@category.Name</span>
+                                            <span class="pl-category-amount">@category.Total.ToString("C0")</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+
+                            @if (data.PLExpenseCategories.Any())
+                            {
+                                <div class="pl-section">
+                                    <div class="pl-section-header expense">
+                                        <span class="pl-section-title">Expenses</span>
+                                        <span class="pl-section-total">@data.PLExpenseCategories.Sum(c => c.Total).ToString("C0")</span>
+                                    </div>
+                                    @foreach (var category in data.PLExpenseCategories.OrderByDescending(c => c.Total).Take(4))
+                                    {
+                                        <div class="pl-category">
+                                            <span class="pl-category-name">@category.Name</span>
+                                            <span class="pl-category-amount">@category.Total.ToString("C0")</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+
+                            <div class="pl-net-profit @(data.PLNetProfit >= 0 ? "positive" : "negative")">
+                                <span class="pl-net-label">Net Profit</span>
+                                <span class="pl-net-amount">@data.PLNetProfit.ToString("C0")</span>
+                            </div>
+
+                            @if (data.PLGrossMargin > 0)
+                            {
+                                <div class="pl-margin">
+                                    <span>Gross Margin: @data.PLGrossMargin.ToString("N1")%</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="no-data">No income or expense data available</div>
+                    }
+                </ChildContent>
+            </Card>
+
+            @* Cash Flow Summary *@
+            <Card Title="Cash Flow Summary" CssClass="dashboard-card mt-4">
+                <ChildContent>
+                    @if (data.CashFlowItems.Any())
+                    {
+                        <div class="cash-flow-summary">
+                            <div class="cash-flow-totals">
+                                <div class="cash-flow-item inflow">
+                                    <span class="cash-flow-label">Cash In</span>
+                                    <span class="cash-flow-amount">@data.CashInflows.ToString("C0")</span>
+                                </div>
+                                <div class="cash-flow-item outflow">
+                                    <span class="cash-flow-label">Cash Out</span>
+                                    <span class="cash-flow-amount">@data.CashOutflows.ToString("C0")</span>
+                                </div>
+                                <div class="cash-flow-net @(data.NetCashFlow >= 0 ? "positive" : "negative")">
+                                    <span class="cash-flow-net-label">Net Cash Flow</span>
+                                    <span class="cash-flow-net-amount">@data.NetCashFlow.ToString("C0")</span>
+                                </div>
+                            </div>
+
+                            <div class="cash-flow-breakdown">
+                                <div class="cash-flow-section">
+                                    <div class="cash-flow-section-title">Inflows</div>
+                                    @foreach (var item in data.CashFlowItems.Where(i => i.IsInflow).OrderByDescending(i => i.Amount).Take(3))
+                                    {
+                                        <div class="cash-flow-category">
+                                            <span class="cash-flow-category-name">@item.Category</span>
+                                            <span class="cash-flow-category-amount">@item.Amount.ToString("C0")</span>
+                                        </div>
+                                    }
+                                </div>
+
+                                <div class="cash-flow-section">
+                                    <div class="cash-flow-section-title">Outflows</div>
+                                    @foreach (var item in data.CashFlowItems.Where(i => !i.IsInflow).OrderByDescending(i => i.Amount).Take(3))
+                                    {
+                                        <div class="cash-flow-category">
+                                            <span class="cash-flow-category-name">@item.Category</span>
+                                            <span class="cash-flow-category-amount">@item.Amount.ToString("C0")</span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="no-data">No cash flow data available</div>
+                    }
+                </ChildContent>
+            </Card>
+        </div>
+
+        @* Right Column *@
+        <div class="dashboard-column">
+            @* Quick Actions *@
+            <Card Title="Quick Actions" CssClass="dashboard-card">
+                <ChildContent>
+                    <div class="quick-actions-grid">
+                        <a href="/customers/new" class="quick-action-btn">
+                            <span class="quick-action-icon">👥</span>
+                            <span class="quick-action-text">New Customer</span>
+                        </a>
+                        <a href="/vendors/new" class="quick-action-btn">
+                            <span class="quick-action-icon">🏪</span>
+                            <span class="quick-action-text">New Vendor</span>
+                        </a>
+                        <a href="/products/new" class="quick-action-btn">
+                            <span class="quick-action-icon">📦</span>
+                            <span class="quick-action-text">New Product</span>
+                        </a>
+                        <a href="/journal-entries/new" class="quick-action-btn">
+                            <span class="quick-action-icon">📝</span>
+                            <span class="quick-action-text">Journal Entry</span>
+                        </a>
+                        <a href="/chart-of-accounts" class="quick-action-btn">
+                            <span class="quick-action-icon">📊</span>
+                            <span class="quick-action-text">Chart of Accounts</span>
+                        </a>
+                        <a href="/settings" class="quick-action-btn">
+                            <span class="quick-action-icon">⚙️</span>
+                            <span class="quick-action-text">Settings</span>
+                        </a>
+                    </div>
+                </ChildContent>
+            </Card>
+
+            @* Recent Activity *@
+            <Card Title="Recent Activity" CssClass="dashboard-card mt-4">
+                <ChildContent>
+                    @if (data.RecentActivities.Any())
+                    {
+                        <div class="activity-list">
+                            @foreach (var activity in data.RecentActivities)
+                            {
+                                <a href="@activity.Link" class="activity-item">
+                                    <span class="activity-icon">@activity.Icon</span>
+                                    <div class="activity-content">
+                                        <div class="activity-description">@activity.Description</div>
+                                        <div class="activity-meta">
+                                            <span class="activity-type">@activity.Type</span>
+                                            <span class="activity-date">@activity.Date.ToString("MMM d")</span>
+                                        </div>
+                                    </div>
+                                    @if (activity.Amount.HasValue)
+                                    {
+                                        <span class="activity-amount">@activity.Amount.Value.ToString("C0")</span>
+                                    }
+                                </a>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="empty-state-sm">
+                            <span class="empty-icon">📋</span>
+                            <span>No recent activity</span>
+                        </div>
+                    }
+                </ChildContent>
+            </Card>
+        </div>
+    </div>
+}
+
+<style>
+    .dashboard-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--space-4);
+        margin-bottom: var(--space-6);
+    }
+    
+    .stat-widget {
+        background: var(--bg-primary);
+        border-radius: var(--radius-lg);
+        padding: var(--space-4);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .stat-widget.revenue { border-top: 3px solid var(--success-color); }
+    .stat-widget.expenses { border-top: 3px solid var(--danger-color); }
+    .stat-widget.profit { border-top: 3px solid var(--primary-color); }
+    .stat-widget.cash { border-top: 3px solid var(--info-color); }
+    .stat-widget.positive-bg { background: linear-gradient(135deg, var(--success-light) 0%, var(--bg-primary) 100%); }
+    .stat-widget.negative-bg { background: linear-gradient(135deg, var(--danger-light) 0%, var(--bg-primary) 100%); }
+    
+    .stat-widget-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-2);
+    }
+    
+    .stat-widget-title { font-size: var(--text-sm); color: var(--text-secondary); }
+    .stat-widget-icon { font-size: var(--text-xl); }
+    .stat-widget-value { font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1); }
+    
+    .stat-widget-change {
+        font-size: var(--text-sm);
+        color: var(--text-muted);
+        display: flex;
+        gap: var(--space-2);
+    }
+    
+    .stat-widget-change.positive span:first-child { color: var(--success-color); }
+    .stat-widget-change.negative span:first-child { color: var(--danger-color); }
+    
+    .dashboard-grid-2col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-6);
+    }
+    
+    .dashboard-card { height: fit-content; }
+    
+    .card-header-value {
+        font-size: var(--text-lg);
+        font-weight: var(--font-semibold);
+        color: var(--primary-color);
+    }
+    
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: var(--space-2) 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .summary-row:last-child { border-bottom: none; }
+    .summary-row.warning { color: var(--warning-color); }
+    .summary-label { color: var(--text-secondary); }
+    .summary-value { font-weight: var(--font-medium); }
+    
+    .aging-bar {
+        display: flex;
+        height: 8px;
+        border-radius: var(--radius-full);
+        overflow: hidden;
+        margin: var(--space-4) 0 var(--space-2);
+        background: var(--gray-200);
+    }
+    
+    .aging-segment { height: 100%; min-width: 4px; }
+    .aging-segment.current { background: var(--success-color); }
+    .aging-segment.days-30 { background: var(--info-color); }
+    .aging-segment.days-60 { background: var(--warning-color); }
+    .aging-segment.days-90 { background: #f97316; }
+    .aging-segment.over-90 { background: var(--danger-color); }
+    
+    .aging-legend {
+        display: flex;
+        gap: var(--space-3);
+        font-size: var(--text-xs);
+        color: var(--text-muted);
+    }
+    
+    .legend-item { display: flex; align-items: center; gap: var(--space-1); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot.current { background: var(--success-color); }
+    .dot.days-30 { background: var(--info-color); }
+    .dot.days-60 { background: var(--warning-color); }
+    .dot.days-90 { background: #f97316; }
+    .dot.over-90 { background: var(--danger-color); }
+    
+    .no-data {
+        text-align: center;
+        padding: var(--space-4);
+        color: var(--text-muted);
+        font-size: var(--text-sm);
+    }
+    
+    .snapshot-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-3);
+    }
+    
+    .snapshot-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: var(--space-3);
+        background: var(--bg-secondary);
+        border-radius: var(--radius-md);
+        text-decoration: none;
+        color: inherit;
+        transition: all var(--transition-fast);
+    }
+    
+    .snapshot-item:hover { background: var(--bg-tertiary); transform: translateY(-2px); }
+    .snapshot-item.warning { background: var(--warning-light); }
+    .snapshot-icon { font-size: var(--text-xl); }
+    .snapshot-value { font-size: var(--text-xl); font-weight: var(--font-bold); }
+    .snapshot-label { font-size: var(--text-xs); color: var(--text-muted); }
+    
+    .inventory-value {
+        margin-top: var(--space-3);
+        padding-top: var(--space-3);
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        font-size: var(--text-sm);
+    }
+    
+    .quick-actions-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-2);
+    }
+    
+    .quick-action-btn {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-3);
+        background: var(--bg-secondary);
+        border-radius: var(--radius-md);
+        text-decoration: none;
+        color: var(--text-primary);
+        font-size: var(--text-sm);
+        transition: all var(--transition-fast);
+    }
+    
+    .quick-action-btn:hover { background: var(--primary-light); color: var(--primary-dark); }
+    .quick-action-icon { font-size: var(--text-lg); }
+    
+    .activity-list { display: flex; flex-direction: column; }
+    
+    .activity-item {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        padding: var(--space-3) 0;
+        border-bottom: 1px solid var(--border-color);
+        text-decoration: none;
+        color: inherit;
+        transition: background var(--transition-fast);
+    }
+    
+    .activity-item:last-child { border-bottom: none; }
+    .activity-item:hover { background: var(--bg-secondary); margin: 0 calc(-1 * var(--space-3)); padding-left: var(--space-3); padding-right: var(--space-3); }
+    
+    .activity-icon { font-size: var(--text-lg); }
+    .activity-content { flex: 1; min-width: 0; }
+    .activity-description { font-size: var(--text-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .activity-meta { display: flex; gap: var(--space-2); font-size: var(--text-xs); color: var(--text-muted); }
+    .activity-amount { font-weight: var(--font-medium); font-family: var(--font-mono); }
+    
+    .empty-state-sm {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-6);
+        color: var(--text-muted);
+    }
+    
+    .empty-icon { font-size: var(--text-2xl); opacity: 0.5; }
+    
+    .pl-summary { display: flex; flex-direction: column; gap: var(--space-3); }
+    
+    .pl-section {
+        padding: var(--space-3);
+        background: var(--bg-secondary);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-color);
+    }
+    
+    .pl-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-2);
+        padding-bottom: var(--space-2);
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .pl-section-header.income { border-bottom-color: var(--success-color); }
+    .pl-section-header.expense { border-bottom-color: var(--danger-color); }
+    
+    .pl-section-title {
+        font-weight: var(--font-semibold);
+        color: var(--text-primary);
+    }
+    
+    .pl-section-total {
+        font-weight: var(--font-bold);
+        font-size: var(--text-lg);
+    }
+    
+    .pl-section-header.income .pl-section-total { color: var(--success-color); }
+    .pl-section-header.expense .pl-section-total { color: var(--danger-color); }
+    
+    .pl-category {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--space-1) 0;
+        font-size: var(--text-sm);
+    }
+    
+    .pl-category-name { color: var(--text-secondary); }
+    .pl-category-amount { font-weight: var(--font-medium); }
+    
+    .pl-net-profit {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--space-3);
+        background: var(--bg-secondary);
+        border-radius: var(--radius-md);
+        border: 2px solid;
+        font-weight: var(--font-bold);
+        font-size: var(--text-lg);
+    }
+    
+    .pl-net-profit.positive { border-color: var(--success-color); color: var(--success-color); }
+    .pl-net-profit.negative { border-color: var(--danger-color); color: var(--danger-color); }
+    
+    .pl-net-label { color: var(--text-primary); }
+    .pl-net-amount { font-family: var(--font-mono); }
+    
+    .pl-margin {
+        text-align: center;
+        padding: var(--space-2);
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-sm);
+        font-size: var(--text-sm);
+        color: var(--text-muted);
+    }
+    
+    .cash-flow-summary { display: flex; flex-direction: column; gap: var(--space-4); }
+    
+    .cash-flow-totals {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-3);
+    }
+    
+    .cash-flow-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: var(--space-3);
+        background: var(--bg-secondary);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-color);
+    }
+    
+    .cash-flow-item.inflow { border-color: var(--success-color); }
+    .cash-flow-item.outflow { border-color: var(--danger-color); }
+    
+    .cash-flow-label {
+        font-size: var(--text-sm);
+        color: var(--text-secondary);
+        margin-bottom: var(--space-1);
+    }
+    
+    .cash-flow-amount {
+        font-size: var(--text-lg);
+        font-weight: var(--font-bold);
+    }
+    
+    .cash-flow-item.inflow .cash-flow-amount { color: var(--success-color); }
+    .cash-flow-item.outflow .cash-flow-amount { color: var(--danger-color); }
+    
+    .cash-flow-net {
+        grid-column: span 2;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--space-3);
+        background: var(--bg-secondary);
+        border-radius: var(--radius-md);
+        border: 2px solid;
+        font-weight: var(--font-bold);
+        font-size: var(--text-lg);
+    }
+    
+    .cash-flow-net.positive { border-color: var(--success-color); color: var(--success-color); }
+    .cash-flow-net.negative { border-color: var(--danger-color); color: var(--danger-color); }
+    
+    .cash-flow-net-label { color: var(--text-primary); }
+    .cash-flow-net-amount { font-family: var(--font-mono); }
+    
+    .cash-flow-breakdown {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-4);
+    }
+    
+    .cash-flow-section { display: flex; flex-direction: column; gap: var(--space-2); }
+    
+    .cash-flow-section-title {
+        font-weight: var(--font-semibold);
+        color: var(--text-primary);
+        font-size: var(--text-sm);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .cash-flow-category {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--space-1) 0;
+        font-size: var(--text-sm);
+    }
+    
+    .cash-flow-category-name { color: var(--text-secondary); }
+    .cash-flow-category-amount { font-weight: var(--font-medium); }
+</style>
+
+@code {
+    private DashboardData? data;
+    private Company? company;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            company = await CompanyService.GetCompanyAsync();
+            data = await DashboardService.GetDashboardDataAsync();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private string GetGreeting()
+    {
+        var hour = DateTime.Now.Hour;
+        string greeting;
+        if (hour < 12)
+            greeting = "Good morning";
+        else if (hour < 17)
+            greeting = "Good afternoon";
+        else
+            greeting = "Good evening";
+        
+        var companyName = company?.DisplayName ?? "your business";
+        return $"{greeting}! Here's your overview for {companyName}.";
+    }
+}

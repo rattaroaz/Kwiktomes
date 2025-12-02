@@ -1,0 +1,589 @@
+@page "/journal-entries"
+@page "/journal-entries/new"
+@page "/journal-entries/{EntryId:int}"
+@inject IJournalEntryService JournalEntryService
+@inject IAccountService AccountService
+@inject NavigationManager Navigation
+
+<PageHeader Title="@GetPageTitle()" Subtitle="@GetPageSubtitle()">
+    <ActionContent>
+        @if (!isEditing)
+        {
+            <button class="btn btn-primary" @onclick="CreateNewEntry">
+                + New Journal Entry
+            </button>
+        }
+    </ActionContent>
+</PageHeader>
+
+@if (isLoading)
+{
+    <LoadingSpinner Text="Loading..." />
+}
+else if (isEditing && editingEntry != null)
+{
+    @* Journal Entry Form *@
+    <div class="entry-form-container">
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger mb-4">@errorMessage</div>
+        }
+        
+        <Card Title="Entry Details">
+            <ChildContent>
+                <div class="form-row">
+                    <div class="form-group" style="width: 150px;">
+                        <label class="form-label">Entry #</label>
+                        <input type="text" class="form-control" value="@editingEntry.EntryNumber" 
+                               readonly placeholder="Auto-generated" />
+                    </div>
+                    <div class="form-group" style="width: 180px;">
+                        <label class="form-label form-label-required">Date</label>
+                        <input type="date" class="form-control" @bind="editingEntry.EntryDate" />
+                    </div>
+                    <div class="form-group flex-1">
+                        <label class="form-label">Reference</label>
+                        <input type="text" class="form-control" @bind="editingEntry.Reference" 
+                               placeholder="Invoice #, Check #, etc." />
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Memo</label>
+                    <textarea class="form-control" rows="2" @bind="editingEntry.Memo" 
+                              placeholder="Description of the journal entry"></textarea>
+                </div>
+                
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" @bind="editingEntry.IsAdjusting" id="isAdjusting" />
+                    <label class="form-check-label" for="isAdjusting">Adjusting Entry</label>
+                </div>
+            </ChildContent>
+        </Card>
+        
+        <Card Title="Entry Lines" CssClass="mt-4">
+            <ChildContent>
+                <table class="data-table entry-lines-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40%;">Account</th>
+                            <th>Description</th>
+                            <th style="width: 140px;" class="text-right">Debit</th>
+                            <th style="width: 140px;" class="text-right">Credit</th>
+                            <th style="width: 50px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var line in entryLines)
+                        {
+                            var index = entryLines.IndexOf(line);
+                            <tr>
+                                <td>
+                                    <select class="form-control form-control-sm" @bind="line.AccountId">
+                                        <option value="0">-- Select Account --</option>
+                                        @foreach (var account in accounts)
+                                        {
+                                            <option value="@account.Id">@account.AccountNumber - @account.Name</option>
+                                        }
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm" 
+                                           @bind="line.Description" placeholder="Line description" />
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm text-right" 
+                                           step="0.01" min="0"
+                                           @bind="line.DebitAmount" 
+                                           @onfocus="() => ClearCreditIfDebit(line)" />
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm text-right" 
+                                           step="0.01" min="0"
+                                           @bind="line.CreditAmount"
+                                           @onfocus="() => ClearDebitIfCredit(line)" />
+                                </td>
+                                <td>
+                                    @if (entryLines.Count > 2)
+                                    {
+                                        <button type="button" class="btn btn-sm btn-secondary" 
+                                                @onclick="() => RemoveLine(line)">🗑️</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2">
+                                <button type="button" class="btn btn-sm btn-secondary" @onclick="AddLine">
+                                    + Add Line
+                                </button>
+                            </td>
+                            <td class="text-right font-mono font-semibold">@TotalDebits.ToString("N2")</td>
+                            <td class="text-right font-mono font-semibold">@TotalCredits.ToString("N2")</td>
+                            <td></td>
+                        </tr>
+                        <tr class="balance-row @(IsBalanced ? "balanced" : "unbalanced")">
+                            <td colspan="2" class="text-right">
+                                @if (IsBalanced)
+                                {
+                                    <span class="text-success">✓ Entry is balanced</span>
+                                }
+                                else
+                                {
+                                    <span class="text-danger">⚠ Entry is not balanced (difference: @Difference.ToString("C2"))</span>
+                                }
+                            </td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </ChildContent>
+        </Card>
+        
+        <div class="form-actions mt-6">
+            <button type="button" class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+            <button type="button" class="btn btn-primary btn-lg" @onclick="SaveEntryAsync" 
+                    disabled="@(isSaving || !IsBalanced)">
+                @(isSaving ? "Saving..." : "Save Entry")
+            </button>
+            @if (editingEntry.Id > 0 && editingEntry.Status == TransactionStatus.Draft)
+            {
+                <button type="button" class="btn btn-success btn-lg" @onclick="PostEntryAsync"
+                        disabled="@(isSaving || !IsBalanced)">
+                    Post Entry
+                </button>
+            }
+        </div>
+    </div>
+}
+else
+{
+    @* Journal Entries List *@
+    <div class="entries-toolbar">
+        <div class="toolbar-left">
+            <div class="date-range">
+                <input type="date" class="form-control" style="width: 150px;" @bind="startDate" />
+                <span>to</span>
+                <input type="date" class="form-control" style="width: 150px;" @bind="endDate" />
+                <button class="btn btn-secondary btn-sm" @onclick="LoadEntriesAsync">Apply</button>
+            </div>
+            <select class="form-control" style="width: 150px;" @bind="filterStatus">
+                <option value="">All Status</option>
+                <option value="Draft">Draft</option>
+                <option value="Posted">Posted</option>
+                <option value="Void">Void</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="entries-summary">
+        <div class="summary-card">
+            <div class="summary-icon">📝</div>
+            <div class="summary-info">
+                <div class="summary-label">Total Entries</div>
+                <div class="summary-value">@entries.Count</div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon">✅</div>
+            <div class="summary-info">
+                <div class="summary-label">Posted</div>
+                <div class="summary-value">@entries.Count(e => e.Status == TransactionStatus.Posted)</div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon">📋</div>
+            <div class="summary-info">
+                <div class="summary-label">Draft</div>
+                <div class="summary-value">@entries.Count(e => e.Status == TransactionStatus.Draft)</div>
+            </div>
+        </div>
+    </div>
+
+    @if (GetFilteredEntries().Any())
+    {
+        <Card>
+            <ChildContent>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 100px;">Entry #</th>
+                            <th style="width: 110px;">Date</th>
+                            <th>Memo</th>
+                            <th style="width: 100px;">Reference</th>
+                            <th class="text-right" style="width: 120px;">Amount</th>
+                            <th style="width: 100px;">Status</th>
+                            <th style="width: 80px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in GetFilteredEntries())
+                        {
+                            <tr class="cursor-pointer @(entry.Status == TransactionStatus.Void ? "voided" : "")" 
+                                @onclick="() => ViewEntry(entry)">
+                                <td class="font-mono">@entry.EntryNumber</td>
+                                <td>@entry.EntryDate.ToString("MM/dd/yyyy")</td>
+                                <td>
+                                    <div class="entry-memo">@(entry.Memo ?? "—")</div>
+                                    @if (entry.IsAdjusting)
+                                    {
+                                        <span class="badge badge-info">Adjusting</span>
+                                    }
+                                </td>
+                                <td class="font-mono">@(entry.Reference ?? "—")</td>
+                                <td class="text-right font-mono">
+                                    @entry.Lines.Sum(l => l.DebitAmount).ToString("C2")
+                                </td>
+                                <td>
+                                    <span class="badge @GetStatusBadgeClass(entry.Status)">@entry.Status</span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-secondary" @onclick:stopPropagation="true" 
+                                            @onclick="() => ViewEntry(entry)">👁️</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </ChildContent>
+        </Card>
+    }
+    else
+    {
+        <Card>
+            <ChildContent>
+                <div class="empty-state">
+                    <span class="empty-state-icon">📝</span>
+                    <div class="empty-state-title">No journal entries found</div>
+                    <div class="empty-state-description">
+                        Create journal entries to record adjustments and manual transactions.
+                    </div>
+                    <button class="btn btn-primary" @onclick="CreateNewEntry">+ New Journal Entry</button>
+                </div>
+            </ChildContent>
+        </Card>
+    }
+}
+
+<style>
+    .entry-form-container { max-width: 900px; }
+    
+    .entries-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-4);
+        gap: var(--space-4);
+        flex-wrap: wrap;
+    }
+    
+    .toolbar-left {
+        display: flex;
+        gap: var(--space-3);
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .date-range {
+        display: flex;
+        gap: var(--space-2);
+        align-items: center;
+    }
+    
+    .entries-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: var(--space-4);
+        margin-bottom: var(--space-4);
+    }
+    
+    .summary-card {
+        background: var(--bg-primary);
+        border-radius: var(--radius-lg);
+        padding: var(--space-4);
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        border: 1px solid var(--border-color);
+    }
+    
+    .summary-icon { font-size: var(--text-2xl); }
+    .summary-label { font-size: var(--text-sm); color: var(--text-secondary); }
+    .summary-value { font-size: var(--text-xl); font-weight: var(--font-semibold); }
+    
+    .form-row { display: flex; gap: var(--space-4); flex-wrap: wrap; }
+    .form-row .form-group { min-width: 120px; }
+    
+    .form-actions {
+        display: flex;
+        gap: var(--space-3);
+        justify-content: flex-end;
+        padding-top: var(--space-4);
+        border-top: 1px solid var(--border-color);
+    }
+    
+    .entry-lines-table input,
+    .entry-lines-table select {
+        margin: 0;
+    }
+    
+    .entry-lines-table tfoot td {
+        padding-top: var(--space-3);
+        border-top: 2px solid var(--border-color);
+    }
+    
+    .balance-row.balanced td { color: var(--success-color); }
+    .balance-row.unbalanced td { color: var(--danger-color); }
+    
+    .entry-memo {
+        max-width: 300px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    tr.voided { opacity: 0.5; text-decoration: line-through; }
+    
+    .font-semibold { font-weight: var(--font-semibold); }
+</style>
+
+@code {
+    [Parameter]
+    public int? EntryId { get; set; }
+    
+    private List<JournalEntry> entries = new();
+    private List<Account> accounts = new();
+    private JournalEntry? editingEntry;
+    private List<JournalEntryLine> entryLines = new();
+    private bool isLoading = true;
+    private bool isEditing = false;
+    private bool isSaving = false;
+    private string? errorMessage;
+    private DateTime startDate = DateTime.Today.AddMonths(-1);
+    private DateTime endDate = DateTime.Today;
+    private string filterStatus = "";
+    
+    // Computed
+    private decimal TotalDebits => entryLines.Sum(l => l.DebitAmount);
+    private decimal TotalCredits => entryLines.Sum(l => l.CreditAmount);
+    private decimal Difference => Math.Abs(TotalDebits - TotalCredits);
+    private bool IsBalanced => TotalDebits == TotalCredits && TotalDebits > 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+        
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        if (uri.AbsolutePath.EndsWith("/new", StringComparison.OrdinalIgnoreCase))
+        {
+            CreateNewEntry();
+        }
+        else if (EntryId.HasValue && EntryId.Value > 0)
+        {
+            var entry = entries.FirstOrDefault(e => e.Id == EntryId.Value);
+            if (entry != null)
+            {
+                ViewEntry(entry);
+            }
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        isLoading = true;
+        try
+        {
+            entries = (await JournalEntryService.GetByDateRangeAsync(startDate, endDate)).ToList();
+            accounts = (await AccountService.GetActiveAccountsAsync()).ToList();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadEntriesAsync()
+    {
+        entries = (await JournalEntryService.GetByDateRangeAsync(startDate, endDate)).ToList();
+    }
+
+    private IEnumerable<JournalEntry> GetFilteredEntries()
+    {
+        var filtered = entries.AsEnumerable();
+        
+        if (!string.IsNullOrEmpty(filterStatus) && Enum.TryParse<TransactionStatus>(filterStatus, out var status))
+        {
+            filtered = filtered.Where(e => e.Status == status);
+        }
+        
+        return filtered.OrderByDescending(e => e.EntryDate).ThenByDescending(e => e.EntryNumber);
+    }
+
+    private void CreateNewEntry()
+    {
+        editingEntry = new JournalEntry
+        {
+            EntryDate = DateTime.Today,
+            Status = TransactionStatus.Draft
+        };
+        entryLines = new List<JournalEntryLine>
+        {
+            new JournalEntryLine(),
+            new JournalEntryLine()
+        };
+        isEditing = true;
+        errorMessage = null;
+    }
+
+    private void ViewEntry(JournalEntry entry)
+    {
+        editingEntry = new JournalEntry
+        {
+            Id = entry.Id,
+            EntryNumber = entry.EntryNumber,
+            EntryDate = entry.EntryDate,
+            Memo = entry.Memo,
+            Reference = entry.Reference,
+            IsAdjusting = entry.IsAdjusting,
+            Status = entry.Status
+        };
+        entryLines = entry.Lines.Select(l => new JournalEntryLine
+        {
+            Id = l.Id,
+            AccountId = l.AccountId,
+            Description = l.Description,
+            DebitAmount = l.DebitAmount,
+            CreditAmount = l.CreditAmount
+        }).ToList();
+        isEditing = true;
+        errorMessage = null;
+    }
+
+    private void CancelEdit()
+    {
+        isEditing = false;
+        editingEntry = null;
+        entryLines.Clear();
+        errorMessage = null;
+        Navigation.NavigateTo("/journal-entries");
+    }
+
+    private void AddLine()
+    {
+        entryLines.Add(new JournalEntryLine());
+    }
+
+    private void RemoveLine(JournalEntryLine line)
+    {
+        if (entryLines.Count > 2)
+        {
+            entryLines.Remove(line);
+        }
+    }
+
+    private void ClearCreditIfDebit(JournalEntryLine line)
+    {
+        if (line.DebitAmount > 0)
+            line.CreditAmount = 0;
+    }
+
+    private void ClearDebitIfCredit(JournalEntryLine line)
+    {
+        if (line.CreditAmount > 0)
+            line.DebitAmount = 0;
+    }
+
+    private async Task SaveEntryAsync()
+    {
+        if (editingEntry == null || !IsBalanced) return;
+        
+        // Validate lines have accounts
+        var validLines = entryLines.Where(l => l.AccountId > 0 && (l.DebitAmount > 0 || l.CreditAmount > 0)).ToList();
+        if (validLines.Count < 2)
+        {
+            errorMessage = "At least two valid lines with accounts are required.";
+            return;
+        }
+        
+        isSaving = true;
+        errorMessage = null;
+        
+        try
+        {
+            if (editingEntry.Id > 0)
+            {
+                // Update existing - for now just update the entry, not lines
+                await JournalEntryService.UpdateAsync(editingEntry);
+            }
+            else
+            {
+                await JournalEntryService.CreateWithLinesAsync(editingEntry, validLines);
+            }
+            
+            await LoadEntriesAsync();
+            CancelEdit();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving entry: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task PostEntryAsync()
+    {
+        if (editingEntry == null || editingEntry.Id == 0) return;
+        
+        isSaving = true;
+        errorMessage = null;
+        
+        try
+        {
+            var success = await JournalEntryService.PostEntryAsync(editingEntry.Id);
+            if (success)
+            {
+                await LoadEntriesAsync();
+                CancelEdit();
+            }
+            else
+            {
+                errorMessage = "Failed to post entry. Ensure the entry is balanced.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error posting entry: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private string GetStatusBadgeClass(TransactionStatus status) => status switch
+    {
+        TransactionStatus.Draft => "badge-secondary",
+        TransactionStatus.Posted => "badge-success",
+        TransactionStatus.Void => "badge-danger",
+        _ => "badge-secondary"
+    };
+
+    private string GetPageTitle()
+    {
+        if (isEditing)
+            return editingEntry?.Id > 0 ? $"Journal Entry {editingEntry.EntryNumber}" : "New Journal Entry";
+        return "Journal Entries";
+    }
+
+    private string GetPageSubtitle()
+    {
+        if (isEditing)
+            return editingEntry?.Id > 0 ? "View or edit journal entry" : "Create a new manual journal entry";
+        return "Record adjusting entries and manual transactions";
+    }
+}
