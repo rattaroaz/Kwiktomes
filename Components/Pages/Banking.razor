@@ -1,0 +1,1291 @@
+@page "/banking"
+@page "/banking/{AccountId:int}"
+@inject IBankService BankService
+@inject IAccountService AccountService
+@inject NavigationManager Navigation
+
+<PageHeader Title="@GetPageTitle()" Subtitle="@GetPageSubtitle()">
+    <ActionContent>
+        @if (selectedAccount != null && !isEditing && !showTransfer && !showReconciliation && !showImport)
+        {
+            <button class="btn btn-secondary" @onclick="BackToAccounts">
+                ← Accounts
+            </button>
+            <button class="btn btn-secondary" @onclick="ShowTransferForm">
+                ↔️ Transfer
+            </button>
+            <button class="btn btn-secondary" @onclick="ShowReconciliationForm">
+                ✓ Reconcile
+            </button>
+            <button class="btn btn-primary" @onclick="ShowAddTransaction">
+                + Add Transaction
+            </button>
+        }
+        else if (!isEditing && !showTransfer && !showReconciliation && !showImport)
+        {
+            <button class="btn btn-primary" @onclick="ShowAddAccount">
+                + Add Account
+            </button>
+        }
+    </ActionContent>
+</PageHeader>
+
+@if (isLoading)
+{
+    <LoadingSpinner Text="Loading..." />
+}
+else if (!showTransfer && !showReconciliation && !showImport && !string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">
+        <strong>Error:</strong> @errorMessage
+        <button class="btn btn-sm btn-secondary ms-3" @onclick="LoadDataAsync">Retry</button>
+    </div>
+}
+else if (showTransfer)
+{
+    @* Transfer Form *@
+    <div class="transfer-container">
+        <Card Title="Transfer Between Accounts">
+            <ChildContent>
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger mb-4">@errorMessage</div>
+                }
+                
+                <div class="form-group">
+                    <label class="form-label form-label-required">From Account</label>
+                    <select class="form-control" @bind="transferFromAccountId">
+                        <option value="0">-- Select Account --</option>
+                        @foreach (var account in accounts.Where(a => a.Id != transferToAccountId))
+                        {
+                            <option value="@account.Id">@account.Name (@account.CurrentBalance.ToString("C2"))</option>
+                        }
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label form-label-required">To Account</label>
+                    <select class="form-control" @bind="transferToAccountId">
+                        <option value="0">-- Select Account --</option>
+                        @foreach (var account in accounts.Where(a => a.Id != transferFromAccountId))
+                        {
+                            <option value="@account.Id">@account.Name (@account.CurrentBalance.ToString("C2"))</option>
+                        }
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group" style="width: 180px;">
+                        <label class="form-label form-label-required">Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" @bind="transferAmount" step="0.01" />
+                        </div>
+                    </div>
+                    <div class="form-group" style="width: 180px;">
+                        <label class="form-label">Date</label>
+                        <input type="date" class="form-control" @bind="transferDate" />
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <input type="text" class="form-control" @bind="transferDescription" placeholder="Optional description" />
+                </div>
+                
+                <div class="form-actions">
+                    <button class="btn btn-secondary" @onclick="CancelTransfer">Cancel</button>
+                    <button class="btn btn-primary" @onclick="ExecuteTransfer" disabled="@isSaving">
+                        @(isSaving ? "Processing..." : "Transfer Funds")
+                    </button>
+                </div>
+            </ChildContent>
+        </Card>
+    </div>
+}
+else if (showReconciliation && selectedAccount != null)
+{
+    @* Reconciliation View *@
+    <div class="reconciliation-container">
+        <Card Title="Reconcile Account">
+            <ChildContent>
+                <div class="reconciliation-header">
+                    <div class="form-row">
+                        <div class="form-group" style="width: 200px;">
+                            <label class="form-label">Statement Ending Balance</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" @bind="reconcileStatementBalance" 
+                                       @bind:after="UpdateReconcileSummary" step="0.01" />
+                            </div>
+                        </div>
+                        <div class="form-group" style="width: 180px;">
+                            <label class="form-label">Statement Date</label>
+                            <input type="date" class="form-control" @bind="reconcileStatementDate" 
+                                   @bind:after="UpdateReconcileSummary" />
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="reconciliation-summary">
+                    <div class="summary-row">
+                        <span>Beginning Balance</span>
+                        <span class="font-mono">@reconcileSummary.BeginningBalance.ToString("C2")</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Cleared Deposits</span>
+                        <span class="font-mono text-success">+@reconcileSummary.ClearedDeposits.ToString("C2")</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Cleared Withdrawals</span>
+                        <span class="font-mono text-danger">-@reconcileSummary.ClearedWithdrawals.ToString("C2")</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>Cleared Balance</span>
+                        <span class="font-mono">@reconcileSummary.ClearedBalance.ToString("C2")</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Statement Balance</span>
+                        <span class="font-mono">@reconcileSummary.StatementBalance.ToString("C2")</span>
+                    </div>
+                    <div class="summary-row difference @(reconcileSummary.Difference == 0 ? "balanced" : "unbalanced")">
+                        <span>Difference</span>
+                        <span class="font-mono">@reconcileSummary.Difference.ToString("C2")</span>
+                    </div>
+                </div>
+                
+                <h4 class="mt-4">Uncleared Transactions</h4>
+                <p class="text-muted">Check the transactions that appear on your statement.</p>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">Clear</th>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th class="text-right">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var transaction in reconcileSummary.UnclearedTransactions)
+                        {
+                            <tr>
+                                <td>
+                                    <input type="checkbox" checked="@transaction.IsCleared" 
+                                           @onchange="() => ToggleClear(transaction)" />
+                                </td>
+                                <td>@transaction.TransactionDate.ToString("MMM d")</td>
+                                <td>@(transaction.Payee ?? transaction.Description)</td>
+                                <td class="text-right font-mono @(transaction.Amount >= 0 ? "text-success" : "text-danger")">
+                                    @transaction.Amount.ToString("C2")
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                
+                <div class="form-actions mt-4">
+                    <button class="btn btn-secondary" @onclick="CancelReconciliation">Cancel</button>
+                    <button class="btn btn-success" @onclick="FinishReconciliation" 
+                            disabled="@(reconcileSummary.Difference != 0 || isSaving)">
+                        @(isSaving ? "Saving..." : "Finish Reconciliation")
+                    </button>
+                </div>
+            </ChildContent>
+        </Card>
+    </div>
+}
+else if (showImport && selectedAccount != null)
+{
+    @* Import Transactions *@
+    <div class="import-container">
+        <Card Title="Import Transactions">
+            <ChildContent>
+                <div class="import-instructions">
+                    <p>Paste your CSV data below. Expected format: Date, Description, Amount</p>
+                    <p class="text-muted">Positive amounts = deposits, Negative amounts = withdrawals</p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">CSV Data</label>
+                    <textarea class="form-control" rows="10" @bind="importData" 
+                              placeholder="01/15/2024,Coffee Shop,-4.50&#10;01/16/2024,Direct Deposit,1500.00"></textarea>
+                </div>
+                
+                @if (importResult != null)
+                {
+                    <div class="import-result @(importResult.ErrorCount > 0 ? "has-errors" : "")">
+                        <p>✓ Imported: @importResult.ImportedCount</p>
+                        <p>⚠️ Duplicates skipped: @importResult.DuplicateCount</p>
+                        @if (importResult.ErrorCount > 0)
+                        {
+                            <p>❌ Errors: @importResult.ErrorCount</p>
+                            @foreach (var error in importResult.Errors)
+                            {
+                                <p class="text-danger">@error</p>
+                            }
+                        }
+                    </div>
+                }
+                
+                <div class="form-actions">
+                    <button class="btn btn-secondary" @onclick="CancelImport">Cancel</button>
+                    <button class="btn btn-primary" @onclick="ExecuteImport" disabled="@isSaving">
+                        @(isSaving ? "Importing..." : "Import Transactions")
+                    </button>
+                </div>
+            </ChildContent>
+        </Card>
+    </div>
+}
+else if (isEditing)
+{
+    @* Account Form or Transaction Form *@
+    @if (editingTransaction != null)
+    {
+        <div class="transaction-form-container">
+            <Card Title="@(editingTransaction.Id > 0 ? "Edit Transaction" : "Add Transaction")">
+                <ChildContent>
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger mb-4">@errorMessage</div>
+                    }
+                    
+                    <div class="form-row">
+                        <div class="form-group" style="width: 180px;">
+                            <label class="form-label">Date</label>
+                            <input type="date" class="form-control" @bind="editingTransaction.TransactionDate" />
+                        </div>
+                        <div class="form-group" style="width: 180px;">
+                            <label class="form-label">Type</label>
+                            <select class="form-control" @bind="editingTransaction.TransactionType">
+                                @foreach (BankTransactionType type in Enum.GetValues<BankTransactionType>())
+                                {
+                                    <option value="@type">@type</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">Payee</label>
+                            <input type="text" class="form-control" @bind="editingTransaction.Payee" 
+                                   placeholder="Who was this payment to/from?" />
+                        </div>
+                        <div class="form-group" style="width: 150px;">
+                            <label class="form-label">Ref #</label>
+                            <input type="text" class="form-control" @bind="editingTransaction.ReferenceNumber" 
+                                   placeholder="Check #, etc." />
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group" style="width: 180px;">
+                            <label class="form-label form-label-required">Amount</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" @bind="transactionAmount" step="0.01" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="btn-group">
+                                <button class="btn @(isDeposit ? "btn-success" : "btn-outline-success")" 
+                                        @onclick="() => isDeposit = true">Deposit</button>
+                                <button class="btn @(!isDeposit ? "btn-danger" : "btn-outline-danger")" 
+                                        @onclick="() => isDeposit = false">Withdrawal</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <select class="form-control" @bind="editingTransaction.CategoryAccountId">
+                            <option value="">-- Select Category --</option>
+                            @foreach (var account in categoryAccounts)
+                            {
+                                <option value="@account.Id">@account.AccountNumber - @account.Name</option>
+                            }
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <input type="text" class="form-control" @bind="editingTransaction.Description" 
+                               placeholder="Memo or notes" />
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+                        <button class="btn btn-primary" @onclick="SaveTransaction" disabled="@isSaving">
+                            @(isSaving ? "Saving..." : "Save Transaction")
+                        </button>
+                    </div>
+                </ChildContent>
+            </Card>
+        </div>
+    }
+    else if (editingAccount != null)
+    {
+        <div class="account-form-container">
+            <Card Title="@(editingAccount.Id > 0 ? "Edit Bank Account" : "Add Bank Account")">
+                <ChildContent>
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger mb-4">@errorMessage</div>
+                    }
+                    
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label form-label-required">Account Name</label>
+                            <input type="text" class="form-control" @bind="editingAccount.Name" 
+                                   placeholder="e.g., Business Checking" />
+                        </div>
+                        <div class="form-group" style="width: 180px;">
+                            <label class="form-label">Account Type</label>
+                            <select class="form-control" @bind="editingAccount.AccountType">
+                                @foreach (BankAccountType type in Enum.GetValues<BankAccountType>())
+                                {
+                                    <option value="@type">@type</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">Bank Name</label>
+                            <input type="text" class="form-control" @bind="editingAccount.BankName" 
+                                   placeholder="e.g., Chase Bank" />
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">Account Number</label>
+                            <input type="text" class="form-control" @bind="editingAccount.AccountNumber" 
+                                   placeholder="Last 4 digits recommended" />
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">Routing Number</label>
+                            <input type="text" class="form-control" @bind="editingAccount.RoutingNumber" />
+                        </div>
+                    </div>
+                    
+                    @if (editingAccount.Id == 0)
+                    {
+                        <div class="form-row">
+                            <div class="form-group" style="width: 200px;">
+                                <label class="form-label">Opening Balance</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" @bind="editingAccount.OpeningBalance" step="0.01" />
+                                </div>
+                            </div>
+                            <div class="form-group" style="width: 180px;">
+                                <label class="form-label">As of Date</label>
+                                <input type="date" class="form-control" @bind="editingAccount.OpeningBalanceDate" />
+                            </div>
+                        </div>
+                    }
+                    
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" rows="2" @bind="editingAccount.Description" 
+                                  placeholder="Notes about this account"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-check">
+                            <input type="checkbox" class="form-check-input" @bind="editingAccount.IsActive" />
+                            <span class="form-check-label">Account is active</span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+                        <button class="btn btn-primary" @onclick="SaveAccount" disabled="@isSaving">
+                            @(isSaving ? "Saving..." : "Save Account")
+                        </button>
+                    </div>
+                </ChildContent>
+            </Card>
+        </div>
+    }
+}
+else if (selectedAccount != null)
+{
+    @* Transaction Register *@
+    <div class="register-container">
+        <div class="account-header-bar">
+            <div class="account-info">
+                <span class="account-type-badge @GetAccountTypeBadgeClass(selectedAccount.AccountType)">
+                    @selectedAccount.AccountTypeDisplay
+                </span>
+                @if (!string.IsNullOrEmpty(selectedAccount.BankName))
+                {
+                    <span class="bank-name">@selectedAccount.BankName</span>
+                }
+                <span class="account-number">@selectedAccount.MaskedAccountNumber</span>
+            </div>
+            <div class="account-balance">
+                <span class="balance-label">Current Balance</span>
+                <span class="balance-value @(selectedAccount.CurrentBalance >= 0 ? "" : "negative")">
+                    @selectedAccount.CurrentBalance.ToString("C2")
+                </span>
+            </div>
+        </div>
+        
+        <div class="register-toolbar">
+            <div class="toolbar-left">
+                <button class="btn btn-sm @(showAllTransactions ? "btn-primary" : "btn-secondary")" 
+                        @onclick="() => showAllTransactions = true">All</button>
+                <button class="btn btn-sm @(!showAllTransactions ? "btn-primary" : "btn-secondary")" 
+                        @onclick="() => showAllTransactions = false">Recent 50</button>
+            </div>
+            <div class="toolbar-right">
+                <button class="btn btn-sm btn-secondary" @onclick="ShowImportForm">
+                    📥 Import
+                </button>
+            </div>
+        </div>
+        
+        <Card>
+            <ChildContent>
+                <table class="register-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">✓</th>
+                            <th style="width: 100px;">Date</th>
+                            <th>Payee / Description</th>
+                            <th style="width: 100px;">Category</th>
+                            <th style="width: 110px;" class="text-right">Withdrawal</th>
+                            <th style="width: 110px;" class="text-right">Deposit</th>
+                            <th style="width: 120px;" class="text-right">Balance</th>
+                            <th style="width: 60px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var transaction in GetDisplayedTransactions())
+                        {
+                            <tr class="@(transaction.IsReconciled ? "reconciled" : transaction.IsCleared ? "cleared" : "")">
+                                <td class="status-cell">
+                                    @if (transaction.IsReconciled)
+                                    {
+                                        <span class="status-icon reconciled" title="Reconciled">R</span>
+                                    }
+                                    else if (transaction.IsCleared)
+                                    {
+                                        <span class="status-icon cleared" title="Cleared">C</span>
+                                    }
+                                </td>
+                                <td>@transaction.TransactionDate.ToString("MM/dd/yy")</td>
+                                <td>
+                                    <div class="payee">@(transaction.Payee ?? "—")</div>
+                                    @if (!string.IsNullOrEmpty(transaction.Description))
+                                    {
+                                        <div class="memo">@transaction.Description</div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(transaction.ReferenceNumber))
+                                    {
+                                        <div class="ref-num">Ref: @transaction.ReferenceNumber</div>
+                                    }
+                                </td>
+                                <td class="category">
+                                    @(transaction.CategoryAccount?.Name ?? 
+                                      (transaction.TransferAccount != null ? $"[{transaction.TransferAccount.Name}]" : "—"))
+                                </td>
+                                <td class="text-right font-mono text-danger">
+                                    @(transaction.Amount < 0 ? transaction.AbsoluteAmount.ToString("N2") : "")
+                                </td>
+                                <td class="text-right font-mono text-success">
+                                    @(transaction.Amount >= 0 ? transaction.Amount.ToString("N2") : "")
+                                </td>
+                                <td class="text-right font-mono">@transaction.RunningBalance.ToString("C2")</td>
+                                <td>
+                                    @if (!transaction.IsReconciled)
+                                    {
+                                        <button class="btn btn-sm btn-secondary" @onclick="() => EditTransaction(transaction)">✏️</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </ChildContent>
+        </Card>
+    </div>
+}
+else
+{
+    @* Bank Accounts List *@
+    <div class="banking-summary">
+        <div class="summary-card">
+            <div class="summary-icon">🏦</div>
+            <div class="summary-info">
+                <div class="summary-label">Bank Accounts</div>
+                <div class="summary-value">@summary.TotalAccounts</div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon">💵</div>
+            <div class="summary-info">
+                <div class="summary-label">Cash Balance</div>
+                <div class="summary-value">@summary.TotalCashBalance.ToString("C2")</div>
+            </div>
+        </div>
+        @if (summary.TotalCreditBalance != 0)
+        {
+            <div class="summary-card warning">
+                <div class="summary-icon">💳</div>
+                <div class="summary-info">
+                    <div class="summary-label">Credit Balance</div>
+                    <div class="summary-value">@summary.TotalCreditBalance.ToString("C2")</div>
+                </div>
+            </div>
+        }
+        <div class="summary-card">
+            <div class="summary-icon">📝</div>
+            <div class="summary-info">
+                <div class="summary-label">Unreconciled</div>
+                <div class="summary-value">@summary.UnreconciledTransactions</div>
+            </div>
+        </div>
+    </div>
+    
+    @if (accounts.Any())
+    {
+        <div class="accounts-grid">
+            @foreach (var account in accounts)
+            {
+                <div class="account-card @(account.IsActive ? "" : "inactive")" @onclick="() => SelectAccount(account)">
+                    <div class="account-card-header">
+                        <span class="account-type-badge @GetAccountTypeBadgeClass(account.AccountType)">
+                            @account.AccountTypeDisplay
+                        </span>
+                        <button class="btn btn-sm btn-secondary" @onclick:stopPropagation="true" 
+                                @onclick="() => EditAccount(account)">⚙️</button>
+                    </div>
+                    <div class="account-card-body">
+                        <h3 class="account-name">@account.Name</h3>
+                        @if (!string.IsNullOrEmpty(account.BankName))
+                        {
+                            <div class="bank-name">@account.BankName</div>
+                        }
+                        <div class="account-number">@account.MaskedAccountNumber</div>
+                    </div>
+                    <div class="account-card-footer">
+                        <div class="balance @(account.CurrentBalance >= 0 ? "" : "negative")">
+                            @account.CurrentBalance.ToString("C2")
+                        </div>
+                        @if (account.LastReconciledDate.HasValue)
+                        {
+                            <div class="last-reconciled">
+                                Reconciled: @account.LastReconciledDate.Value.ToString("MMM d")
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <Card>
+            <ChildContent>
+                <div class="empty-state">
+                    <span class="empty-state-icon">🏦</span>
+                    <div class="empty-state-title">No bank accounts</div>
+                    <div class="empty-state-description">
+                        Add your bank accounts to track balances and transactions.
+                    </div>
+                    <button class="btn btn-primary" @onclick="ShowAddAccount">+ Add Bank Account</button>
+                </div>
+            </ChildContent>
+        </Card>
+    }
+}
+
+<style>
+    .transfer-container, .account-form-container, .transaction-form-container, 
+    .import-container, .reconciliation-container { max-width: 600px; }
+    
+    .form-row { display: flex; gap: var(--space-4); flex-wrap: wrap; }
+    .form-row .form-group { min-width: 120px; }
+    
+    .form-actions {
+        display: flex;
+        gap: var(--space-3);
+        justify-content: flex-end;
+        padding-top: var(--space-4);
+        border-top: 1px solid var(--border-color);
+    }
+    
+    .banking-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: var(--space-4);
+        margin-bottom: var(--space-4);
+    }
+    
+    .summary-card {
+        background: var(--bg-primary);
+        border-radius: var(--radius-lg);
+        padding: var(--space-4);
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        border: 1px solid var(--border-color);
+    }
+    
+    .summary-card.warning { border-color: var(--warning-color); }
+    .summary-icon { font-size: var(--text-2xl); }
+    .summary-label { font-size: var(--text-sm); color: var(--text-secondary); }
+    .summary-value { font-size: var(--text-xl); font-weight: var(--font-semibold); }
+    
+    .accounts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: var(--space-4);
+    }
+    
+    .account-card {
+        background: var(--bg-primary);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-color);
+        cursor: pointer;
+        transition: all 0.2s;
+        overflow: hidden;
+    }
+    
+    .account-card:hover { border-color: var(--primary-color); box-shadow: var(--shadow-md); }
+    .account-card.inactive { opacity: 0.6; }
+    
+    .account-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--space-3);
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .account-type-badge {
+        font-size: var(--text-xs);
+        font-weight: var(--font-semibold);
+        padding: var(--space-1) var(--space-2);
+        border-radius: var(--radius-sm);
+        text-transform: uppercase;
+    }
+    
+    .account-type-badge.checking { background: #dbeafe; color: #1d4ed8; }
+    .account-type-badge.savings { background: #dcfce7; color: #16a34a; }
+    .account-type-badge.credit-card { background: #fef3c7; color: #d97706; }
+    .account-type-badge.other { background: #f3f4f6; color: #374151; }
+    
+    .account-card-body { padding: var(--space-4); }
+    .account-name { margin: 0 0 var(--space-1) 0; font-size: var(--text-lg); }
+    .bank-name { font-size: var(--text-sm); color: var(--text-secondary); }
+    .account-number { font-size: var(--text-sm); color: var(--text-muted); font-family: var(--font-mono); }
+    
+    .account-card-footer {
+        padding: var(--space-3) var(--space-4);
+        background: var(--bg-secondary);
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .balance { font-size: var(--text-xl); font-weight: var(--font-bold); font-family: var(--font-mono); }
+    .balance.negative { color: var(--danger-color); }
+    .last-reconciled { font-size: var(--text-xs); color: var(--text-muted); }
+    
+    /* Register Styles */
+    .register-container { }
+    
+    .account-header-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--space-4);
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        margin-bottom: var(--space-4);
+    }
+    
+    .account-info { display: flex; align-items: center; gap: var(--space-3); }
+    .account-balance { text-align: right; }
+    .balance-label { display: block; font-size: var(--text-sm); color: var(--text-secondary); }
+    .balance-value { font-size: var(--text-2xl); font-weight: var(--font-bold); font-family: var(--font-mono); }
+    .balance-value.negative { color: var(--danger-color); }
+    
+    .register-toolbar {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: var(--space-3);
+    }
+    
+    .register-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: var(--text-sm);
+    }
+    
+    .register-table th {
+        text-align: left;
+        padding: var(--space-2) var(--space-3);
+        border-bottom: 2px solid var(--border-color);
+        font-weight: var(--font-semibold);
+        color: var(--text-secondary);
+        font-size: var(--text-xs);
+        text-transform: uppercase;
+    }
+    
+    .register-table td {
+        padding: var(--space-2) var(--space-3);
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: top;
+    }
+    
+    .register-table tr.reconciled { background: #f0fdf4; }
+    .register-table tr.cleared { background: #fefce8; }
+    
+    .status-cell { text-align: center; }
+    .status-icon { font-size: var(--text-xs); font-weight: var(--font-bold); }
+    .status-icon.reconciled { color: var(--success-color); }
+    .status-icon.cleared { color: var(--warning-color); }
+    
+    .payee { font-weight: var(--font-medium); }
+    .memo { font-size: var(--text-xs); color: var(--text-muted); }
+    .ref-num { font-size: var(--text-xs); color: var(--text-muted); font-family: var(--font-mono); }
+    .category { font-size: var(--text-xs); color: var(--text-secondary); }
+    
+    /* Reconciliation Styles */
+    .reconciliation-summary {
+        background: var(--bg-secondary);
+        padding: var(--space-4);
+        border-radius: var(--radius-md);
+        margin: var(--space-4) 0;
+    }
+    
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: var(--space-2) 0;
+        font-size: var(--text-sm);
+    }
+    
+    .summary-row.total {
+        border-top: 1px solid var(--border-color);
+        padding-top: var(--space-3);
+        font-weight: var(--font-semibold);
+    }
+    
+    .summary-row.difference {
+        border-top: 2px solid var(--border-color);
+        padding-top: var(--space-3);
+        font-weight: var(--font-bold);
+        font-size: var(--text-lg);
+    }
+    
+    .summary-row.difference.balanced { color: var(--success-color); }
+    .summary-row.difference.unbalanced { color: var(--danger-color); }
+    
+    /* Import Styles */
+    .import-instructions { margin-bottom: var(--space-4); }
+    .import-result { padding: var(--space-3); background: var(--bg-secondary); border-radius: var(--radius-md); margin-top: var(--space-4); }
+    .import-result.has-errors { background: var(--danger-light); }
+</style>
+
+@code {
+    [Parameter]
+    public int? AccountId { get; set; }
+    
+    private List<BankAccount> accounts = new();
+    private List<Account> categoryAccounts = new();
+    private BankAccount? selectedAccount;
+    private BankAccount? editingAccount;
+    private BankTransaction? editingTransaction;
+    private List<BankTransaction> transactions = new();
+    private BankingSummary summary = new();
+    private ReconciliationSummary reconcileSummary = new();
+    
+    private bool isLoading = true;
+    private bool isEditing = false;
+    private bool isSaving = false;
+    private bool showTransfer = false;
+    private bool showReconciliation = false;
+    private bool showImport = false;
+    private bool showAllTransactions = false;
+    private string? errorMessage;
+    
+    // Transaction form
+    private decimal transactionAmount = 0;
+    private bool isDeposit = true;
+    
+    // Transfer form
+    private int transferFromAccountId = 0;
+    private int transferToAccountId = 0;
+    private decimal transferAmount = 0;
+    private DateTime transferDate = DateTime.Today;
+    private string? transferDescription;
+    
+    // Reconciliation
+    private decimal reconcileStatementBalance = 0;
+    private DateTime reconcileStatementDate = DateTime.Today;
+    
+    // Import
+    private string importData = "";
+    private ImportResult? importResult;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+        
+        if (AccountId.HasValue && AccountId.Value > 0)
+        {
+            var account = accounts.FirstOrDefault(a => a.Id == AccountId.Value);
+            if (account != null)
+            {
+                await SelectAccount(account);
+            }
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            accounts = (await BankService.GetAllAccountsAsync()).ToList();
+            categoryAccounts = (await AccountService.GetAccountsByTypeAsync(AccountType.Expense)).ToList();
+            categoryAccounts.AddRange(await AccountService.GetAccountsByTypeAsync(AccountType.Income));
+            summary = await BankService.GetBankingSummaryAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading data: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SelectAccount(BankAccount account)
+    {
+        selectedAccount = await BankService.GetAccountWithTransactionsAsync(account.Id, showAllTransactions ? null : 50);
+        if (selectedAccount != null)
+        {
+            transactions = selectedAccount.Transactions.ToList();
+        }
+    }
+
+    private void BackToAccounts()
+    {
+        selectedAccount = null;
+        transactions.Clear();
+        Navigation.NavigateTo("/banking");
+    }
+
+    private IEnumerable<BankTransaction> GetDisplayedTransactions()
+    {
+        return showAllTransactions ? transactions : transactions.Take(50);
+    }
+
+    #region Account Operations
+
+    private void ShowAddAccount()
+    {
+        editingAccount = new BankAccount
+        {
+            AccountType = BankAccountType.Checking,
+            OpeningBalanceDate = DateTime.Today,
+            IsActive = true
+        };
+        isEditing = true;
+        errorMessage = null;
+    }
+
+    private void EditAccount(BankAccount account)
+    {
+        editingAccount = new BankAccount
+        {
+            Id = account.Id,
+            Name = account.Name,
+            BankName = account.BankName,
+            AccountType = account.AccountType,
+            AccountNumber = account.AccountNumber,
+            RoutingNumber = account.RoutingNumber,
+            LinkedAccountId = account.LinkedAccountId,
+            Description = account.Description,
+            IsActive = account.IsActive
+        };
+        isEditing = true;
+        errorMessage = null;
+    }
+
+    private async Task SaveAccount()
+    {
+        if (editingAccount == null) return;
+        
+        if (string.IsNullOrWhiteSpace(editingAccount.Name))
+        {
+            errorMessage = "Account name is required";
+            return;
+        }
+        
+        isSaving = true;
+        errorMessage = null;
+        
+        try
+        {
+            if (editingAccount.Id > 0)
+            {
+                await BankService.UpdateAccountAsync(editingAccount);
+            }
+            else
+            {
+                await BankService.CreateAccountAsync(editingAccount);
+            }
+            
+            await LoadDataAsync();
+            CancelEdit();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving account: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    #endregion
+
+    #region Transaction Operations
+
+    private void ShowAddTransaction()
+    {
+        if (selectedAccount == null) return;
+        
+        editingTransaction = new BankTransaction
+        {
+            BankAccountId = selectedAccount.Id,
+            TransactionDate = DateTime.Today,
+            TransactionType = BankTransactionType.Other
+        };
+        transactionAmount = 0;
+        isDeposit = true;
+        isEditing = true;
+        errorMessage = null;
+    }
+
+    private void EditTransaction(BankTransaction transaction)
+    {
+        editingTransaction = new BankTransaction
+        {
+            Id = transaction.Id,
+            BankAccountId = transaction.BankAccountId,
+            TransactionDate = transaction.TransactionDate,
+            TransactionType = transaction.TransactionType,
+            Payee = transaction.Payee,
+            Description = transaction.Description,
+            ReferenceNumber = transaction.ReferenceNumber,
+            CategoryAccountId = transaction.CategoryAccountId,
+            VendorId = transaction.VendorId,
+            CustomerId = transaction.CustomerId
+        };
+        transactionAmount = Math.Abs(transaction.Amount);
+        isDeposit = transaction.Amount >= 0;
+        isEditing = true;
+        errorMessage = null;
+    }
+
+    private async Task SaveTransaction()
+    {
+        if (editingTransaction == null) return;
+        
+        if (transactionAmount <= 0)
+        {
+            errorMessage = "Amount must be greater than zero";
+            return;
+        }
+        
+        editingTransaction.Amount = isDeposit ? transactionAmount : -transactionAmount;
+        
+        isSaving = true;
+        errorMessage = null;
+        
+        try
+        {
+            if (editingTransaction.Id > 0)
+            {
+                await BankService.UpdateTransactionAsync(editingTransaction);
+            }
+            else
+            {
+                await BankService.CreateTransactionAsync(editingTransaction);
+            }
+            
+            if (selectedAccount != null)
+            {
+                await SelectAccount(selectedAccount);
+            }
+            await LoadDataAsync();
+            CancelEdit();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving transaction: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    #endregion
+
+    #region Transfer
+
+    private void ShowTransferForm()
+    {
+        transferFromAccountId = selectedAccount?.Id ?? 0;
+        transferToAccountId = 0;
+        transferAmount = 0;
+        transferDate = DateTime.Today;
+        transferDescription = null;
+        showTransfer = true;
+        errorMessage = null;
+    }
+
+    private void CancelTransfer()
+    {
+        showTransfer = false;
+        errorMessage = null;
+    }
+
+    private async Task ExecuteTransfer()
+    {
+        if (transferFromAccountId == 0 || transferToAccountId == 0)
+        {
+            errorMessage = "Please select both accounts";
+            return;
+        }
+        
+        if (transferAmount <= 0)
+        {
+            errorMessage = "Amount must be greater than zero";
+            return;
+        }
+        
+        isSaving = true;
+        errorMessage = null;
+        
+        try
+        {
+            await BankService.CreateTransferAsync(transferFromAccountId, transferToAccountId, transferAmount, transferDate, transferDescription);
+            await LoadDataAsync();
+            
+            if (selectedAccount != null)
+            {
+                await SelectAccount(selectedAccount);
+            }
+            
+            showTransfer = false;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error transferring funds: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    #endregion
+
+    #region Reconciliation
+
+    private void ShowReconciliationForm()
+    {
+        if (selectedAccount == null) return;
+        
+        reconcileStatementBalance = selectedAccount.CurrentBalance;
+        reconcileStatementDate = DateTime.Today;
+        reconcileSummary = new ReconciliationSummary();
+        showReconciliation = true;
+        
+        _ = UpdateReconcileSummary();
+    }
+
+    private void CancelReconciliation()
+    {
+        showReconciliation = false;
+    }
+
+    private async Task UpdateReconcileSummary()
+    {
+        if (selectedAccount == null) return;
+        reconcileSummary = await BankService.GetReconciliationSummaryAsync(selectedAccount.Id, reconcileStatementBalance, reconcileStatementDate);
+    }
+
+    private async Task ToggleClear(BankTransaction transaction)
+    {
+        if (transaction.IsCleared)
+        {
+            await BankService.UnclearTransactionAsync(transaction.Id);
+        }
+        else
+        {
+            await BankService.ClearTransactionAsync(transaction.Id);
+        }
+        await UpdateReconcileSummary();
+    }
+
+    private async Task FinishReconciliation()
+    {
+        if (selectedAccount == null || reconcileSummary.Difference != 0) return;
+        
+        isSaving = true;
+        try
+        {
+            var clearedIds = reconcileSummary.UnclearedTransactions
+                .Where(t => t.IsCleared)
+                .Select(t => t.Id)
+                .ToList();
+            
+            await BankService.ReconcileTransactionsAsync(selectedAccount.Id, clearedIds, reconcileStatementBalance, reconcileStatementDate);
+            await LoadDataAsync();
+            await SelectAccount(selectedAccount);
+            showReconciliation = false;
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    #endregion
+
+    #region Import
+
+    private void ShowImportForm()
+    {
+        importData = "";
+        importResult = null;
+        showImport = true;
+    }
+
+    private void CancelImport()
+    {
+        showImport = false;
+    }
+
+    private async Task ExecuteImport()
+    {
+        if (selectedAccount == null || string.IsNullOrWhiteSpace(importData)) return;
+        
+        isSaving = true;
+        
+        try
+        {
+            var parsedTransactions = ParseCsvData(importData);
+            importResult = await BankService.ImportTransactionsAsync(selectedAccount.Id, parsedTransactions);
+            
+            if (importResult.ImportedCount > 0)
+            {
+                await LoadDataAsync();
+                await SelectAccount(selectedAccount);
+            }
+        }
+        catch (Exception ex)
+        {
+            importResult = new ImportResult { Errors = { $"Parse error: {ex.Message}" }, ErrorCount = 1 };
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private List<ImportedTransaction> ParseCsvData(string csv)
+    {
+        var transactions = new List<ImportedTransaction>();
+        var lines = csv.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        
+        foreach (var line in lines)
+        {
+            var parts = line.Split(',');
+            if (parts.Length >= 3)
+            {
+                if (DateTime.TryParse(parts[0].Trim(), out var date) &&
+                    decimal.TryParse(parts[2].Trim(), out var amount))
+                {
+                    transactions.Add(new ImportedTransaction
+                    {
+                        Date = date,
+                        Description = parts[1].Trim(),
+                        Amount = amount,
+                        Type = amount >= 0 ? BankTransactionType.Deposit : BankTransactionType.Withdrawal
+                    });
+                }
+            }
+        }
+        
+        return transactions;
+    }
+
+    #endregion
+
+    private void CancelEdit()
+    {
+        isEditing = false;
+        editingAccount = null;
+        editingTransaction = null;
+        errorMessage = null;
+    }
+
+    private string GetAccountTypeBadgeClass(BankAccountType type) => type switch
+    {
+        BankAccountType.Checking => "checking",
+        BankAccountType.Savings => "savings",
+        BankAccountType.CreditCard => "credit-card",
+        _ => "other"
+    };
+
+    private string GetPageTitle()
+    {
+        if (showTransfer) return "Transfer Funds";
+        if (showReconciliation) return "Reconcile Account";
+        if (showImport) return "Import Transactions";
+        if (isEditing && editingAccount != null)
+            return editingAccount.Id > 0 ? "Edit Bank Account" : "Add Bank Account";
+        if (isEditing && editingTransaction != null)
+            return editingTransaction.Id > 0 ? "Edit Transaction" : "Add Transaction";
+        if (selectedAccount != null)
+            return selectedAccount.Name;
+        return "Banking";
+    }
+
+    private string GetPageSubtitle()
+    {
+        if (showTransfer) return "Move money between accounts";
+        if (showReconciliation && selectedAccount != null) return $"Match {selectedAccount.Name} to your statement";
+        if (showImport && selectedAccount != null) return $"Import transactions to {selectedAccount.Name}";
+        if (isEditing && editingAccount != null)
+            return editingAccount.Id > 0 ? "Update account details" : "Add a new bank account";
+        if (isEditing && editingTransaction != null)
+            return "Enter transaction details";
+        if (selectedAccount != null)
+            return $"{selectedAccount.AccountTypeDisplay} • {selectedAccount.BankName}";
+        return "Manage your bank accounts and transactions";
+    }
+}

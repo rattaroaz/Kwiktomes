@@ -5,6 +5,41 @@ using Kwikbooks.Data.Models;
 namespace Kwikbooks.Services;
 
 /// <summary>
+/// Represents a transaction in customer history.
+/// </summary>
+public class CustomerTransactionItem
+{
+    public int Id { get; set; }
+    public string TransactionNumber { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+    public string TypeIcon { get; set; } = string.Empty;
+    public DateTime Date { get; set; }
+    public DateTime? DueDate { get; set; }
+    public string? Status { get; set; }
+    public string? StatusClass { get; set; }
+    public decimal Amount { get; set; }
+    public decimal Balance { get; set; }
+    public string? Memo { get; set; }
+    public bool IsCredit { get; set; } // True for payments (reduce balance)
+}
+
+/// <summary>
+/// Customer balance summary.
+/// </summary>
+public class CustomerBalanceSummary
+{
+    public decimal TotalInvoiced { get; set; }
+    public decimal TotalPayments { get; set; }
+    public decimal CurrentBalance { get; set; }
+    public decimal OverdueAmount { get; set; }
+    public int OpenInvoices { get; set; }
+    public int OverdueInvoices { get; set; }
+    public DateTime? LastPaymentDate { get; set; }
+    public decimal LastPaymentAmount { get; set; }
+    public DateTime? OldestOpenInvoiceDate { get; set; }
+}
+
+/// <summary>
 /// Service for managing customers.
 /// </summary>
 public interface ICustomerService : IDataService<Customer>
@@ -48,6 +83,21 @@ public interface ICustomerService : IDataService<Customer>
     /// Gets the count of active customers.
     /// </summary>
     Task<int> GetActiveCustomerCountAsync();
+    
+    /// <summary>
+    /// Gets transaction history for a customer (invoices and payments).
+    /// </summary>
+    Task<IEnumerable<CustomerTransactionItem>> GetCustomerTransactionsAsync(int customerId, int? limit = null);
+    
+    /// <summary>
+    /// Gets balance summary for a customer.
+    /// </summary>
+    Task<CustomerBalanceSummary> GetCustomerBalanceSummaryAsync(int customerId);
+    
+    /// <summary>
+    /// Recalculates and updates customer balance based on invoices and payments.
+    /// </summary>
+    Task RecalculateBalanceAsync(int customerId);
 }
 
 /// <summary>
@@ -155,5 +205,154 @@ public class CustomerService : BaseDataService<Customer>, ICustomerService
     public async Task<int> GetActiveCustomerCountAsync()
     {
         return await _dbSet.CountAsync(c => c.IsActive);
+    }
+
+    public async Task<IEnumerable<CustomerTransactionItem>> GetCustomerTransactionsAsync(int customerId, int? limit = null)
+    {
+        var transactions = new List<CustomerTransactionItem>();
+        
+        // Get invoices for customer
+        var invoicesQuery = _context.Invoices
+            .Where(i => i.CustomerId == customerId)
+            .OrderByDescending(i => i.TransactionDate)
+            .AsQueryable();
+            
+        var invoices = await invoicesQuery.ToListAsync();
+        
+        foreach (var invoice in invoices)
+        {
+            var (status, statusClass) = GetInvoiceStatusDisplay(invoice.Status, invoice.IsOverdue);
+            transactions.Add(new CustomerTransactionItem
+            {
+                Id = invoice.Id,
+                TransactionNumber = invoice.TransactionNumber,
+                Type = "Invoice",
+                TypeIcon = "📄",
+                Date = invoice.TransactionDate,
+                DueDate = invoice.DueDate,
+                Status = status,
+                StatusClass = statusClass,
+                Amount = invoice.Total,
+                Balance = invoice.BalanceDue,
+                Memo = invoice.Memo,
+                IsCredit = false
+            });
+        }
+        
+        // Get payments from customer
+        var payments = await _context.Payments
+            .Where(p => p.CustomerId == customerId && p.Direction == PaymentDirection.Received)
+            .OrderByDescending(p => p.TransactionDate)
+            .ToListAsync();
+        
+        foreach (var payment in payments)
+        {
+            transactions.Add(new CustomerTransactionItem
+            {
+                Id = payment.Id,
+                TransactionNumber = payment.TransactionNumber,
+                Type = "Payment",
+                TypeIcon = "💳",
+                Date = payment.TransactionDate,
+                Status = "Received",
+                StatusClass = "badge-success",
+                Amount = payment.Total,
+                Balance = 0,
+                Memo = payment.Memo ?? GetPaymentMethodName(payment.PaymentMethod),
+                IsCredit = true
+            });
+        }
+        
+        // Sort by date descending
+        var sorted = transactions.OrderByDescending(t => t.Date).ThenByDescending(t => t.Id);
+        
+        if (limit.HasValue)
+            return sorted.Take(limit.Value).ToList();
+            
+        return sorted.ToList();
+    }
+
+    public async Task<CustomerBalanceSummary> GetCustomerBalanceSummaryAsync(int customerId)
+    {
+        var customer = await _dbSet.FindAsync(customerId);
+        if (customer == null)
+            return new CustomerBalanceSummary();
+        
+        var invoices = await _context.Invoices
+            .Where(i => i.CustomerId == customerId)
+            .ToListAsync();
+        
+        var payments = await _context.Payments
+            .Where(p => p.CustomerId == customerId && p.Direction == PaymentDirection.Received)
+            .OrderByDescending(p => p.TransactionDate)
+            .ToListAsync();
+        
+        var openInvoices = invoices.Where(i => i.Status != InvoiceStatus.Paid && i.Status != InvoiceStatus.Void).ToList();
+        var overdueInvoices = openInvoices.Where(i => i.IsOverdue).ToList();
+        var lastPayment = payments.FirstOrDefault();
+        
+        return new CustomerBalanceSummary
+        {
+            TotalInvoiced = invoices.Where(i => i.Status != InvoiceStatus.Void).Sum(i => i.Total),
+            TotalPayments = payments.Sum(p => p.Total),
+            CurrentBalance = customer.Balance,
+            OverdueAmount = overdueInvoices.Sum(i => i.BalanceDue),
+            OpenInvoices = openInvoices.Count,
+            OverdueInvoices = overdueInvoices.Count,
+            LastPaymentDate = lastPayment?.TransactionDate,
+            LastPaymentAmount = lastPayment?.Total ?? 0,
+            OldestOpenInvoiceDate = openInvoices.OrderBy(i => i.TransactionDate).FirstOrDefault()?.TransactionDate
+        };
+    }
+
+    public async Task RecalculateBalanceAsync(int customerId)
+    {
+        var customer = await _dbSet.FindAsync(customerId);
+        if (customer == null) return;
+        
+        // Sum of unpaid invoice balances
+        var invoiceBalance = await _context.Invoices
+            .Where(i => i.CustomerId == customerId && 
+                        i.Status != InvoiceStatus.Paid && 
+                        i.Status != InvoiceStatus.Void)
+            .SumAsync(i => i.Total - i.AmountPaid);
+        
+        customer.Balance = invoiceBalance;
+        customer.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+    }
+
+    private static (string Status, string Class) GetInvoiceStatusDisplay(InvoiceStatus status, bool isOverdue)
+    {
+        if (isOverdue)
+            return ("Overdue", "badge-danger");
+            
+        return status switch
+        {
+            InvoiceStatus.Draft => ("Draft", "badge-secondary"),
+            InvoiceStatus.Sent => ("Sent", "badge-info"),
+            InvoiceStatus.PartiallyPaid => ("Partial", "badge-warning"),
+            InvoiceStatus.Paid => ("Paid", "badge-success"),
+            InvoiceStatus.Overdue => ("Overdue", "badge-danger"),
+            InvoiceStatus.Void => ("Void", "badge-secondary"),
+            _ => ("Unknown", "badge-secondary")
+        };
+    }
+
+    private static string GetPaymentMethodName(PaymentMethod method)
+    {
+        return method switch
+        {
+            PaymentMethod.Cash => "Cash",
+            PaymentMethod.Check => "Check",
+            PaymentMethod.CreditCard => "Credit Card",
+            PaymentMethod.DebitCard => "Debit Card",
+            PaymentMethod.BankTransfer => "Bank Transfer",
+            PaymentMethod.ACH => "ACH",
+            PaymentMethod.Wire => "Wire Transfer",
+            PaymentMethod.PayPal => "PayPal",
+            PaymentMethod.Venmo => "Venmo",
+            _ => "Other"
+        };
     }
 }

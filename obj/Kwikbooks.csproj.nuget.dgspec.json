@@ -92,6 +92,10 @@
               "target": "Package",
               "version": "[10.0.0, )",
               "autoReferenced": true
+            },
+            "QuestPDF": {
+              "target": "Package",
+              "version": "[2024.10.2, )"
             }
           },
           "imports": [
@@ -420,6 +424,10 @@
               "target": "Package",
               "version": "[10.0.0, )",
               "autoReferenced": true
+            },
+            "QuestPDF": {
+              "target": "Package",
+              "version": "[2024.10.2, )"
             }
           },
           "imports": [
@@ -748,6 +756,10 @@
               "target": "Package",
               "version": "[10.0.0, )",
               "autoReferenced": true
+            },
+            "QuestPDF": {
+              "target": "Package",
+              "version": "[2024.10.2, )"
             }
           },
           "imports": [
@@ -1071,6 +1083,10 @@
             "Microsoft.Maui.Controls": {
               "target": "Package",
               "version": "[10.0.0, )"
+            },
+            "QuestPDF": {
+              "target": "Package",
+              "version": "[2024.10.2, )"
             }
           },
           "imports": [

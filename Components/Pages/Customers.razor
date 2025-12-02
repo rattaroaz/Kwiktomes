@@ -6,7 +6,16 @@
 
 <PageHeader Title="@GetPageTitle()" Subtitle="@GetPageSubtitle()">
     <ActionContent>
-        @if (!isEditing)
+        @if (isViewing && viewingCustomer != null)
+        {
+            <button class="btn btn-secondary" @onclick="BackToList">
+                ← Back
+            </button>
+            <button class="btn btn-primary" @onclick="EditFromView">
+                ✏️ Edit
+            </button>
+        }
+        else if (!isEditing)
         {
             <button class="btn btn-primary" @onclick="CreateNewCustomer">
                 + New Customer
@@ -18,6 +27,293 @@
 @if (isLoading)
 {
     <LoadingSpinner Text="Loading..." />
+}
+else if (isViewing && viewingCustomer != null)
+{
+    @* Customer Detail View *@
+    <div class="customer-detail-container">
+        <div class="customer-detail-grid">
+            @* Left Column - Customer Info *@
+            <div class="customer-detail-main">
+                <Card Title="Customer Information">
+                    <ChildContent>
+                        <div class="detail-header">
+                            <div class="customer-avatar-lg">@viewingCustomer.Initials</div>
+                            <div class="detail-header-info">
+                                <h2 class="detail-name">@viewingCustomer.FullName</h2>
+                                @if (!string.IsNullOrEmpty(viewingCustomer.CompanyName) && viewingCustomer.CompanyName != viewingCustomer.Name)
+                                {
+                                    <div class="detail-company">@viewingCustomer.CompanyName</div>
+                                }
+                                <div class="detail-number">@viewingCustomer.CustomerNumber</div>
+                            </div>
+                            <div class="detail-status">
+                                @if (viewingCustomer.IsActive)
+                                {
+                                    <span class="badge badge-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-secondary">Inactive</span>
+                                }
+                            </div>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4 class="detail-section-title">Contact Information</h4>
+                            <div class="detail-grid">
+                                @if (!string.IsNullOrEmpty(viewingCustomer.Email))
+                                {
+                                    <div class="detail-item">
+                                        <span class="detail-label">📧 Email</span>
+                                        <span class="detail-value">@viewingCustomer.Email</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(viewingCustomer.Phone))
+                                {
+                                    <div class="detail-item">
+                                        <span class="detail-label">📞 Phone</span>
+                                        <span class="detail-value">@viewingCustomer.Phone</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(viewingCustomer.Mobile))
+                                {
+                                    <div class="detail-item">
+                                        <span class="detail-label">📱 Mobile</span>
+                                        <span class="detail-value">@viewingCustomer.Mobile</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(viewingCustomer.Website))
+                                {
+                                    <div class="detail-item">
+                                        <span class="detail-label">🌐 Website</span>
+                                        <span class="detail-value">@viewingCustomer.Website</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                        
+                        @if (!string.IsNullOrEmpty(viewingCustomer.BillingAddressFull))
+                        {
+                            <div class="detail-section">
+                                <h4 class="detail-section-title">Billing Address</h4>
+                                <div class="detail-address">
+                                    @if (!string.IsNullOrEmpty(viewingCustomer.BillingAddress1))
+                                    {
+                                        <div>@viewingCustomer.BillingAddress1</div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(viewingCustomer.BillingAddress2))
+                                    {
+                                        <div>@viewingCustomer.BillingAddress2</div>
+                                    }
+                                    <div>@viewingCustomer.BillingCity, @viewingCustomer.BillingState @viewingCustomer.BillingPostalCode</div>
+                                    @if (!string.IsNullOrEmpty(viewingCustomer.BillingCountry))
+                                    {
+                                        <div>@viewingCustomer.BillingCountry</div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        
+                        @if (!viewingCustomer.ShippingSameAsBilling && !string.IsNullOrEmpty(viewingCustomer.ShippingAddressFull))
+                        {
+                            <div class="detail-section">
+                                <h4 class="detail-section-title">Shipping Address</h4>
+                                <div class="detail-address">
+                                    @if (!string.IsNullOrEmpty(viewingCustomer.ShippingAddress1))
+                                    {
+                                        <div>@viewingCustomer.ShippingAddress1</div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(viewingCustomer.ShippingAddress2))
+                                    {
+                                        <div>@viewingCustomer.ShippingAddress2</div>
+                                    }
+                                    <div>@viewingCustomer.ShippingCity, @viewingCustomer.ShippingState @viewingCustomer.ShippingPostalCode</div>
+                                </div>
+                            </div>
+                        }
+                        
+                        @if (!string.IsNullOrEmpty(viewingCustomer.Notes))
+                        {
+                            <div class="detail-section">
+                                <h4 class="detail-section-title">Notes</h4>
+                                <div class="detail-notes">@viewingCustomer.Notes</div>
+                            </div>
+                        }
+                    </ChildContent>
+                </Card>
+            </div>
+            
+            @* Right Column - Financial Info *@
+            <div class="customer-detail-sidebar">
+                <Card Title="Balance Summary">
+                    <ChildContent>
+                        <div class="financial-stat primary">
+                            <span class="financial-label">Current Balance</span>
+                            <span class="financial-value @(balanceSummary.CurrentBalance > 0 ? "text-danger" : "text-success")">
+                                @balanceSummary.CurrentBalance.ToString("C2")
+                            </span>
+                        </div>
+                        
+                        @if (balanceSummary.OverdueAmount > 0)
+                        {
+                            <div class="overdue-warning">
+                                <span class="overdue-icon">⚠️</span>
+                                <div class="overdue-info">
+                                    <span class="overdue-label">Overdue</span>
+                                    <span class="overdue-value">@balanceSummary.OverdueAmount.ToString("C2")</span>
+                                </div>
+                            </div>
+                        }
+                        
+                        <div class="balance-stats">
+                            <div class="balance-stat-row">
+                                <span class="balance-stat-label">Total Invoiced</span>
+                                <span class="balance-stat-value">@balanceSummary.TotalInvoiced.ToString("C2")</span>
+                            </div>
+                            <div class="balance-stat-row">
+                                <span class="balance-stat-label">Total Payments</span>
+                                <span class="balance-stat-value text-success">@balanceSummary.TotalPayments.ToString("C2")</span>
+                            </div>
+                            <div class="balance-stat-row">
+                                <span class="balance-stat-label">Open Invoices</span>
+                                <span class="balance-stat-value">@balanceSummary.OpenInvoices</span>
+                            </div>
+                            @if (balanceSummary.OverdueInvoices > 0)
+                            {
+                                <div class="balance-stat-row">
+                                    <span class="balance-stat-label">Overdue Invoices</span>
+                                    <span class="balance-stat-value text-danger">@balanceSummary.OverdueInvoices</span>
+                                </div>
+                            }
+                        </div>
+                        
+                        @if (balanceSummary.LastPaymentDate.HasValue)
+                        {
+                            <div class="last-payment">
+                                <span class="last-payment-label">Last Payment</span>
+                                <div class="last-payment-info">
+                                    <span class="last-payment-amount">@balanceSummary.LastPaymentAmount.ToString("C2")</span>
+                                    <span class="last-payment-date">on @balanceSummary.LastPaymentDate.Value.ToString("MMM d, yyyy")</span>
+                                </div>
+                            </div>
+                        }
+                        
+                        <div class="financial-details mt-4">
+                            <div class="financial-row">
+                                <span class="financial-label">Payment Terms</span>
+                                <span class="financial-value">@viewingCustomer.PaymentTerms</span>
+                            </div>
+                            <div class="financial-row">
+                                <span class="financial-label">Credit Limit</span>
+                                <span class="financial-value">@viewingCustomer.CreditLimit.ToString("C2")</span>
+                            </div>
+                        </div>
+                    </ChildContent>
+                </Card>
+                
+                <Card Title="Quick Actions" CssClass="mt-4">
+                    <ChildContent>
+                        <div class="quick-actions-vertical">
+                            <button class="btn btn-secondary btn-block" @onclick="EditFromView">
+                                ✏️ Edit Customer
+                            </button>
+                            @* Placeholder for future invoice/transaction features *@
+                            <button class="btn btn-secondary btn-block" disabled title="Coming soon">
+                                📄 Create Invoice
+                            </button>
+                            <button class="btn btn-secondary btn-block" disabled title="Coming soon">
+                                💳 Receive Payment
+                            </button>
+                        </div>
+                    </ChildContent>
+                </Card>
+            </div>
+        </div>
+        
+        @* Transaction History Section *@
+        <Card Title="Transaction History" CssClass="mt-4">
+            <ChildContent>
+                @if (customerTransactions.Any())
+                {
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;"></th>
+                                <th>Transaction</th>
+                                <th>Date</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th class="text-right">Amount</th>
+                                <th class="text-right">Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var txn in customerTransactions)
+                            {
+                                <tr class="@(txn.IsCredit ? "txn-credit" : "")">
+                                    <td class="txn-icon">@txn.TypeIcon</td>
+                                    <td>
+                                        <div class="txn-number">@txn.TransactionNumber</div>
+                                        <div class="txn-type">@txn.Type</div>
+                                    </td>
+                                    <td>@txn.Date.ToString("MMM d, yyyy")</td>
+                                    <td>
+                                        @if (txn.DueDate.HasValue)
+                                        {
+                                            <span>@txn.DueDate.Value.ToString("MMM d, yyyy")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge @txn.StatusClass">@txn.Status</span>
+                                    </td>
+                                    <td class="text-right font-mono @(txn.IsCredit ? "text-success" : "")">
+                                        @(txn.IsCredit ? "-" : "")@txn.Amount.ToString("C2")
+                                    </td>
+                                    <td class="text-right font-mono @(txn.Balance > 0 ? "text-danger" : "")">
+                                        @if (txn.IsCredit)
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                        else
+                                        {
+                                            @txn.Balance.ToString("C2")
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="empty-state-sm">
+                        <span class="empty-icon">📋</span>
+                        <span class="empty-text">No transactions yet</span>
+                        <span class="empty-hint">Invoices and payments will appear here</span>
+                    </div>
+                }
+                
+                <div class="customer-dates mt-4">
+                    <div class="date-row">
+                        <span class="date-label">Customer Since</span>
+                        <span class="date-value">@viewingCustomer.CreatedAt.ToString("MMM d, yyyy")</span>
+                    </div>
+                    @if (viewingCustomer.UpdatedAt.HasValue && viewingCustomer.UpdatedAt != viewingCustomer.CreatedAt)
+                    {
+                        <div class="date-row">
+                            <span class="date-label">Last Updated</span>
+                            <span class="date-value">@viewingCustomer.UpdatedAt.Value.ToString("MMM d, yyyy")</span>
+                        </div>
+                    }
+                </div>
+            </ChildContent>
+        </Card>
+    </div>
 }
 else if (isEditing && editingCustomer != null)
 {
@@ -233,6 +529,13 @@ else if (isEditing && editingCustomer != null)
         </EditForm>
     </div>
 }
+else if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">
+        <strong>Error:</strong> @errorMessage
+        <button class="btn btn-sm btn-secondary ms-3" @onclick="LoadCustomersAsync">Retry</button>
+    </div>
+}
 else
 {
     @* Customer List *@
@@ -291,7 +594,7 @@ else
                     <tbody>
                         @foreach (var customer in GetFilteredCustomers())
                         {
-                            <tr class="@(customer.IsActive ? "" : "inactive") cursor-pointer" @onclick="() => EditCustomer(customer)">
+                            <tr class="@(customer.IsActive ? "" : "inactive") cursor-pointer" @onclick="async () => await ViewCustomerAsync(customer)">
                                 <td>
                                     <div class="customer-avatar">@customer.Initials</div>
                                 </td>
@@ -364,6 +667,254 @@ else
 }
 
 <style>
+    /* Customer Detail View Styles */
+    .customer-detail-container {
+        max-width: 1200px;
+    }
+    
+    .customer-detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: var(--space-6);
+    }
+    
+    .customer-detail-main { }
+    .customer-detail-sidebar { }
+    
+    .detail-header {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-4);
+        margin-bottom: var(--space-6);
+        padding-bottom: var(--space-4);
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .customer-avatar-lg {
+        width: 64px;
+        height: 64px;
+        border-radius: var(--radius-full);
+        background: var(--primary-light);
+        color: var(--primary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: var(--font-bold);
+        font-size: var(--text-xl);
+        flex-shrink: 0;
+    }
+    
+    .detail-header-info { flex: 1; }
+    .detail-name { margin: 0 0 var(--space-1) 0; font-size: var(--text-xl); font-weight: var(--font-semibold); }
+    .detail-company { color: var(--text-secondary); font-size: var(--text-sm); }
+    .detail-number { color: var(--text-muted); font-size: var(--text-sm); font-family: var(--font-mono); }
+    
+    .detail-section {
+        margin-bottom: var(--space-5);
+    }
+    
+    .detail-section-title {
+        font-size: var(--text-sm);
+        font-weight: var(--font-semibold);
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: var(--space-3);
+        padding-bottom: var(--space-2);
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-3);
+    }
+    
+    .detail-item {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-1);
+    }
+    
+    .detail-label {
+        font-size: var(--text-xs);
+        color: var(--text-muted);
+    }
+    
+    .detail-value {
+        font-size: var(--text-sm);
+        color: var(--text-primary);
+    }
+    
+    .detail-address {
+        font-size: var(--text-sm);
+        color: var(--text-primary);
+        line-height: 1.6;
+    }
+    
+    .detail-notes {
+        font-size: var(--text-sm);
+        color: var(--text-secondary);
+        white-space: pre-wrap;
+        background: var(--bg-secondary);
+        padding: var(--space-3);
+        border-radius: var(--radius-md);
+    }
+    
+    .financial-stat.primary {
+        text-align: center;
+        padding: var(--space-4);
+        background: var(--bg-secondary);
+        border-radius: var(--radius-md);
+        margin-bottom: var(--space-4);
+    }
+    
+    .financial-stat .financial-label {
+        display: block;
+        font-size: var(--text-sm);
+        color: var(--text-secondary);
+        margin-bottom: var(--space-1);
+    }
+    
+    .financial-stat .financial-value {
+        font-size: var(--text-2xl);
+        font-weight: var(--font-bold);
+        font-family: var(--font-mono);
+    }
+    
+    .financial-details {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+    }
+    
+    .financial-row {
+        display: flex;
+        justify-content: space-between;
+        padding: var(--space-2) 0;
+        border-bottom: 1px solid var(--border-color);
+        font-size: var(--text-sm);
+    }
+    
+    .financial-row:last-child { border-bottom: none; }
+    .financial-row .financial-label { color: var(--text-secondary); }
+    .financial-row .financial-value { font-weight: var(--font-medium); }
+    
+    .quick-actions-vertical {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+    }
+    
+    .btn-block { width: 100%; justify-content: center; }
+    
+    .activity-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-4);
+        color: var(--text-muted);
+        text-align: center;
+    }
+    
+    .activity-placeholder .activity-icon { font-size: var(--text-2xl); opacity: 0.5; }
+    .activity-placeholder .activity-text { font-size: var(--text-sm); }
+    
+    .customer-dates {
+        margin-top: var(--space-4);
+        padding-top: var(--space-4);
+        border-top: 1px solid var(--border-color);
+    }
+    
+    .date-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: var(--text-xs);
+        color: var(--text-muted);
+        padding: var(--space-1) 0;
+    }
+    
+    @@media (max-width: 900px) {
+        .customer-detail-grid {
+            grid-template-columns: 1fr;
+        }
+        .detail-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    /* Balance Tracking Styles */
+    .overdue-warning {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-3);
+        background: var(--danger-light);
+        border: 1px solid var(--danger-color);
+        border-radius: var(--radius-md);
+        margin-bottom: var(--space-4);
+    }
+    
+    .overdue-icon { font-size: var(--text-lg); }
+    .overdue-info { display: flex; flex-direction: column; }
+    .overdue-label { font-size: var(--text-xs); color: var(--danger-color); font-weight: var(--font-semibold); }
+    .overdue-value { font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--danger-color); }
+    
+    .balance-stats {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+        margin-bottom: var(--space-4);
+    }
+    
+    .balance-stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--space-2);
+        background: var(--bg-secondary);
+        border-radius: var(--radius-sm);
+        font-size: var(--text-sm);
+    }
+    
+    .balance-stat-label { color: var(--text-secondary); }
+    .balance-stat-value { font-weight: var(--font-medium); font-family: var(--font-mono); }
+    
+    .last-payment {
+        padding: var(--space-3);
+        background: var(--success-light);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--success-color);
+    }
+    
+    .last-payment-label { font-size: var(--text-xs); color: var(--success-dark); display: block; margin-bottom: var(--space-1); }
+    .last-payment-info { display: flex; align-items: baseline; gap: var(--space-2); }
+    .last-payment-amount { font-weight: var(--font-bold); color: var(--success-color); }
+    .last-payment-date { font-size: var(--text-sm); color: var(--text-muted); }
+    
+    /* Transaction History Styles */
+    .txn-icon { font-size: var(--text-lg); text-align: center; }
+    .txn-number { font-weight: var(--font-medium); font-family: var(--font-mono); font-size: var(--text-sm); }
+    .txn-type { font-size: var(--text-xs); color: var(--text-muted); }
+    .txn-credit { background: var(--success-light); }
+    
+    .empty-state-sm {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-6);
+        color: var(--text-muted);
+        text-align: center;
+    }
+    
+    .empty-icon { font-size: var(--text-3xl); opacity: 0.5; }
+    .empty-text { font-weight: var(--font-medium); }
+    .empty-hint { font-size: var(--text-sm); }
+    
+    /* End Customer Detail View Styles */
+    
     .customer-form-container {
         max-width: 800px;
     }
@@ -441,8 +992,12 @@ else
     
     private List<Customer> customers = new();
     private Customer? editingCustomer;
+    private Customer? viewingCustomer;
+    private List<CustomerTransactionItem> customerTransactions = new();
+    private CustomerBalanceSummary balanceSummary = new();
     private bool isLoading = true;
     private bool isEditing = false;
+    private bool isViewing = false;
     private bool isSaving = false;
     private string searchTerm = "";
     private bool showInactive = false;
@@ -463,7 +1018,7 @@ else
             var customer = customers.FirstOrDefault(c => c.Id == CustomerId.Value);
             if (customer != null)
             {
-                EditCustomer(customer);
+                await ViewCustomerAsync(customer);
             }
         }
     }
@@ -471,9 +1026,14 @@ else
     private async Task LoadCustomersAsync()
     {
         isLoading = true;
+        errorMessage = null;
         try
         {
             customers = (await CustomerService.GetAllAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading customers: {ex.Message}";
         }
         finally
         {
@@ -515,6 +1075,18 @@ else
         errorMessage = null;
     }
 
+    private async Task ViewCustomerAsync(Customer customer)
+    {
+        viewingCustomer = customer;
+        isViewing = true;
+        isEditing = false;
+        editingCustomer = null;
+        
+        // Load transaction history and balance summary
+        customerTransactions = (await CustomerService.GetCustomerTransactionsAsync(customer.Id)).ToList();
+        balanceSummary = await CustomerService.GetCustomerBalanceSummaryAsync(customer.Id);
+    }
+
     private void EditCustomer(Customer customer)
     {
         editingCustomer = new Customer
@@ -554,15 +1126,45 @@ else
             Notes = customer.Notes
         };
         isEditing = true;
+        isViewing = false;
+        viewingCustomer = null;
         errorMessage = null;
+    }
+
+    private void EditFromView()
+    {
+        if (viewingCustomer != null)
+        {
+            EditCustomer(viewingCustomer);
+        }
+    }
+
+    private void BackToList()
+    {
+        isViewing = false;
+        isEditing = false;
+        viewingCustomer = null;
+        editingCustomer = null;
+        Navigation.NavigateTo("/customers");
     }
 
     private void CancelEdit()
     {
-        isEditing = false;
-        editingCustomer = null;
-        errorMessage = null;
-        Navigation.NavigateTo("/customers");
+        if (viewingCustomer != null)
+        {
+            // Go back to viewing if we were editing from view
+            isEditing = false;
+            editingCustomer = null;
+            errorMessage = null;
+            isViewing = true;
+        }
+        else
+        {
+            isEditing = false;
+            editingCustomer = null;
+            errorMessage = null;
+            Navigation.NavigateTo("/customers");
+        }
     }
 
     private async Task SaveCustomerAsync()
@@ -579,16 +1181,31 @@ else
                 ? "Due on Receipt" 
                 : $"Net {editingCustomer.PaymentTermsDays}";
             
+            var savedCustomerId = editingCustomer.Id;
+            
             if (editingCustomer.Id > 0)
             {
                 await CustomerService.UpdateAsync(editingCustomer);
             }
             else
             {
-                await CustomerService.CreateAsync(editingCustomer);
+                var created = await CustomerService.CreateAsync(editingCustomer);
+                savedCustomerId = created.Id;
             }
             
             await LoadCustomersAsync();
+            
+            // If we were editing from view, go back to viewing the updated customer
+            if (viewingCustomer != null)
+            {
+                var updatedCustomer = customers.FirstOrDefault(c => c.Id == savedCustomerId);
+                if (updatedCustomer != null)
+                {
+                    await ViewCustomerAsync(updatedCustomer);
+                    return;
+                }
+            }
+            
             CancelEdit();
         }
         catch (Exception ex)
@@ -613,6 +1230,8 @@ else
     {
         if (isEditing)
             return editingCustomer?.Id > 0 ? "Edit Customer" : "New Customer";
+        if (isViewing && viewingCustomer != null)
+            return viewingCustomer.FullName;
         return "Customers";
     }
 
@@ -620,6 +1239,8 @@ else
     {
         if (isEditing)
             return editingCustomer?.Id > 0 ? $"Editing {editingCustomer.Name}" : "Add a new customer";
+        if (isViewing && viewingCustomer != null)
+            return viewingCustomer.CustomerNumber;
         return "Manage your customers and their information";
     }
 }

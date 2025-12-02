@@ -65,6 +65,28 @@ build_metadata.AdditionalFiles.EnableDiagnostics =
 build_metadata.AdditionalFiles.LineInfo = 
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/kimri/OneDrive/Desktop/cloned repos/Kwikbooks/Kwikbooks/Components/Pages/Banking.razor]
+build_metadata.AdditionalFiles.GenKind = 
+build_metadata.AdditionalFiles.ManifestResourceName = 
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xCYW5raW5nLnJhem9y
+build_metadata.AdditionalFiles.RelativePath = 
+build_metadata.AdditionalFiles.Inflator = 
+build_metadata.AdditionalFiles.NoWarn = 
+build_metadata.AdditionalFiles.EnableDiagnostics = 
+build_metadata.AdditionalFiles.LineInfo = 
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/kimri/OneDrive/Desktop/cloned repos/Kwikbooks/Kwikbooks/Components/Pages/Bills.razor]
+build_metadata.AdditionalFiles.GenKind = 
+build_metadata.AdditionalFiles.ManifestResourceName = 
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xCaWxscy5yYXpvcg==
+build_metadata.AdditionalFiles.RelativePath = 
+build_metadata.AdditionalFiles.Inflator = 
+build_metadata.AdditionalFiles.NoWarn = 
+build_metadata.AdditionalFiles.EnableDiagnostics = 
+build_metadata.AdditionalFiles.LineInfo = 
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/kimri/OneDrive/Desktop/cloned repos/Kwikbooks/Kwikbooks/Components/Pages/ChartOfAccounts.razor]
 build_metadata.AdditionalFiles.GenKind = 
 build_metadata.AdditionalFiles.ManifestResourceName = 
@@ -91,6 +113,17 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.GenKind = 
 build_metadata.AdditionalFiles.ManifestResourceName = 
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xIb21lLnJhem9y
+build_metadata.AdditionalFiles.RelativePath = 
+build_metadata.AdditionalFiles.Inflator = 
+build_metadata.AdditionalFiles.NoWarn = 
+build_metadata.AdditionalFiles.EnableDiagnostics = 
+build_metadata.AdditionalFiles.LineInfo = 
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/kimri/OneDrive/Desktop/cloned repos/Kwikbooks/Kwikbooks/Components/Pages/Invoices.razor]
+build_metadata.AdditionalFiles.GenKind = 
+build_metadata.AdditionalFiles.ManifestResourceName = 
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xJbnZvaWNlcy5yYXpvcg==
 build_metadata.AdditionalFiles.RelativePath = 
 build_metadata.AdditionalFiles.Inflator = 
 build_metadata.AdditionalFiles.NoWarn = 

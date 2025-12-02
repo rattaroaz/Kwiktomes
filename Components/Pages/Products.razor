@@ -7,7 +7,16 @@
 
 <PageHeader Title="@GetPageTitle()" Subtitle="@GetPageSubtitle()">
     <ActionContent>
-        @if (!isEditing)
+        @if (isViewing && viewingProduct != null)
+        {
+            <button class="btn btn-secondary" @onclick="BackToList">
+                ← Back
+            </button>
+            <button class="btn btn-primary" @onclick="EditFromView">
+                ✏️ Edit
+            </button>
+        }
+        else if (!isEditing)
         {
             <button class="btn btn-primary" @onclick="CreateNewProduct">
                 + New Product/Service
@@ -19,6 +28,204 @@
 @if (isLoading)
 {
     <LoadingSpinner Text="Loading..." />
+}
+else if (isViewing && viewingProduct != null)
+{
+    @* Product Detail View *@
+    <div class="product-detail-container">
+        <div class="product-detail-grid">
+            @* Left Column - Product Info *@
+            <div class="product-detail-main">
+                <Card Title="Product Information">
+                    <ChildContent>
+                        <div class="detail-header">
+                            <div class="product-icon-lg @GetTypeIconClass(viewingProduct.Type)">
+                                @GetTypeIcon(viewingProduct.Type)
+                            </div>
+                            <div class="detail-header-info">
+                                <h2 class="detail-name">@viewingProduct.Name</h2>
+                                @if (!string.IsNullOrEmpty(viewingProduct.Sku))
+                                {
+                                    <div class="detail-sku">SKU: @viewingProduct.Sku</div>
+                                }
+                                <div class="detail-type">
+                                    <span class="badge @GetTypeBadgeClass(viewingProduct.Type)">@viewingProduct.TypeDisplay</span>
+                                    @if (!string.IsNullOrEmpty(viewingProduct.Category))
+                                    {
+                                        <span class="badge badge-secondary ml-2">@viewingProduct.Category</span>
+                                    }
+                                </div>
+                            </div>
+                            <div class="detail-status">
+                                @if (viewingProduct.IsActive)
+                                {
+                                    <span class="badge badge-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-secondary">Inactive</span>
+                                }
+                            </div>
+                        </div>
+                        
+                        @if (!string.IsNullOrEmpty(viewingProduct.Description))
+                        {
+                            <div class="detail-section">
+                                <h4 class="detail-section-title">Description</h4>
+                                <div class="detail-description">@viewingProduct.Description</div>
+                            </div>
+                        }
+                        
+                        @if (viewingProduct.IsSellable)
+                        {
+                            <div class="detail-section">
+                                <h4 class="detail-section-title">Sales Information</h4>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <span class="detail-label">Sales Price</span>
+                                        <span class="detail-value price">@viewingProduct.SalesPrice.ToString("C2")</span>
+                                    </div>
+                                    @if (viewingProduct.IncomeAccount != null)
+                                    {
+                                        <div class="detail-item">
+                                            <span class="detail-label">Income Account</span>
+                                            <span class="detail-value">@viewingProduct.IncomeAccount.Name</span>
+                                        </div>
+                                    }
+                                    <div class="detail-item">
+                                        <span class="detail-label">Taxable</span>
+                                        <span class="detail-value">@(viewingProduct.IsTaxable ? "Yes" : "No")</span>
+                                    </div>
+                                </div>
+                                @if (!string.IsNullOrEmpty(viewingProduct.SalesDescription))
+                                {
+                                    <div class="detail-notes mt-3">@viewingProduct.SalesDescription</div>
+                                }
+                            </div>
+                        }
+                        
+                        @if (viewingProduct.IsPurchasable)
+                        {
+                            <div class="detail-section">
+                                <h4 class="detail-section-title">Purchase Information</h4>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <span class="detail-label">Purchase Cost</span>
+                                        <span class="detail-value cost">@viewingProduct.PurchaseCost.ToString("C2")</span>
+                                    </div>
+                                    @if (viewingProduct.ExpenseAccount != null)
+                                    {
+                                        <div class="detail-item">
+                                            <span class="detail-label">Expense Account</span>
+                                            <span class="detail-value">@viewingProduct.ExpenseAccount.Name</span>
+                                        </div>
+                                    }
+                                </div>
+                                @if (!string.IsNullOrEmpty(viewingProduct.PurchaseDescription))
+                                {
+                                    <div class="detail-notes mt-3">@viewingProduct.PurchaseDescription</div>
+                                }
+                            </div>
+                        }
+                    </ChildContent>
+                </Card>
+            </div>
+            
+            @* Right Column - Pricing & Inventory *@
+            <div class="product-detail-sidebar">
+                <Card Title="Pricing">
+                    <ChildContent>
+                        <div class="pricing-display">
+                            <div class="price-row main">
+                                <span class="price-label">Sales Price</span>
+                                <span class="price-value">@viewingProduct.SalesPrice.ToString("C2")</span>
+                            </div>
+                            <div class="price-row">
+                                <span class="price-label">Cost</span>
+                                <span class="price-value">@viewingProduct.PurchaseCost.ToString("C2")</span>
+                            </div>
+                            <div class="price-row margin">
+                                <span class="price-label">Margin</span>
+                                <span class="price-value @(viewingProduct.ProfitMargin > 0 ? "text-success" : "text-danger")">
+                                    @viewingProduct.ProfitMargin.ToString("F1")%
+                                </span>
+                            </div>
+                        </div>
+                    </ChildContent>
+                </Card>
+                
+                @if (viewingProduct.Type == ProductType.Inventory)
+                {
+                    <Card Title="Inventory" CssClass="mt-4">
+                        <ChildContent>
+                            <div class="inventory-display">
+                                <div class="inventory-main @(viewingProduct.NeedsReorder ? "low-stock" : "")">
+                                    <span class="inventory-qty">@viewingProduct.QuantityOnHand.ToString("N0")</span>
+                                    <span class="inventory-label">@viewingProduct.UnitOfMeasure on hand</span>
+                                    @if (viewingProduct.NeedsReorder)
+                                    {
+                                        <span class="low-stock-badge">⚠️ Low Stock</span>
+                                    }
+                                </div>
+                                <div class="inventory-stats">
+                                    <div class="inventory-row">
+                                        <span class="stat-label">Reorder Point</span>
+                                        <span class="stat-value">@viewingProduct.ReorderPoint.ToString("N0")</span>
+                                    </div>
+                                    <div class="inventory-row">
+                                        <span class="stat-label">Reorder Qty</span>
+                                        <span class="stat-value">@viewingProduct.ReorderQuantity.ToString("N0")</span>
+                                    </div>
+                                    <div class="inventory-row">
+                                        <span class="stat-label">Avg Cost</span>
+                                        <span class="stat-value">@viewingProduct.AverageCost.ToString("C2")</span>
+                                    </div>
+                                    <div class="inventory-row total">
+                                        <span class="stat-label">Inventory Value</span>
+                                        <span class="stat-value">@viewingProduct.InventoryValue.ToString("C2")</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </ChildContent>
+                    </Card>
+                }
+                
+                <Card Title="Quick Actions" CssClass="mt-4">
+                    <ChildContent>
+                        <div class="quick-actions-vertical">
+                            <button class="btn btn-secondary btn-block" @onclick="EditFromView">
+                                ✏️ Edit Product
+                            </button>
+                            @if (viewingProduct.Type == ProductType.Inventory)
+                            {
+                                <button class="btn btn-secondary btn-block" disabled title="Coming soon">
+                                    📦 Adjust Inventory
+                                </button>
+                            }
+                        </div>
+                    </ChildContent>
+                </Card>
+                
+                <Card Title="Info" CssClass="mt-4">
+                    <ChildContent>
+                        <div class="product-dates">
+                            <div class="date-row">
+                                <span class="date-label">Created</span>
+                                <span class="date-value">@viewingProduct.CreatedAt.ToString("MMM d, yyyy")</span>
+                            </div>
+                            @if (viewingProduct.UpdatedAt.HasValue && viewingProduct.UpdatedAt != viewingProduct.CreatedAt)
+                            {
+                                <div class="date-row">
+                                    <span class="date-label">Last Updated</span>
+                                    <span class="date-value">@viewingProduct.UpdatedAt.Value.ToString("MMM d, yyyy")</span>
+                                </div>
+                            }
+                        </div>
+                    </ChildContent>
+                </Card>
+            </div>
+        </div>
+    </div>
 }
 else if (isEditing && editingProduct != null)
 {
@@ -234,6 +441,13 @@ else if (isEditing && editingProduct != null)
         </EditForm>
     </div>
 }
+else if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">
+        <strong>Error:</strong> @errorMessage
+        <button class="btn btn-sm btn-secondary ms-3" @onclick="LoadDataAsync">Retry</button>
+    </div>
+}
 else
 {
     @* Product List *@
@@ -309,7 +523,7 @@ else
                         @foreach (var product in GetFilteredProducts())
                         {
                             <tr class="@(product.IsActive ? "" : "inactive") @(product.NeedsReorder ? "low-stock" : "") cursor-pointer" 
-                                @onclick="() => EditProduct(product)">
+                                @onclick="() => ViewProduct(product)">
                                 <td>
                                     <div class="product-name">@product.Name</div>
                                     @if (!string.IsNullOrEmpty(product.Category))
@@ -443,6 +657,144 @@ else
     
     tr.inactive { opacity: 0.6; }
     tr.low-stock td:first-child { border-left: 3px solid var(--warning-color); }
+    
+    /* Product Detail View Styles */
+    .product-detail-container { max-width: 1200px; }
+    
+    .product-detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: var(--space-6);
+    }
+    
+    .detail-header {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-4);
+        margin-bottom: var(--space-6);
+        padding-bottom: var(--space-4);
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .product-icon-lg {
+        width: 64px;
+        height: 64px;
+        border-radius: var(--radius-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--text-2xl);
+        flex-shrink: 0;
+    }
+    
+    .product-icon-lg.service { background: #dbeafe; }
+    .product-icon-lg.inventory { background: #dcfce7; }
+    .product-icon-lg.non-inventory { background: #f3f4f6; }
+    
+    .detail-header-info { flex: 1; }
+    .detail-name { margin: 0 0 var(--space-1) 0; font-size: var(--text-xl); font-weight: var(--font-semibold); }
+    .detail-sku { color: var(--text-muted); font-size: var(--text-sm); font-family: var(--font-mono); }
+    .detail-type { margin-top: var(--space-2); }
+    
+    .detail-section { margin-bottom: var(--space-5); }
+    
+    .detail-section-title {
+        font-size: var(--text-sm);
+        font-weight: var(--font-semibold);
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: var(--space-3);
+        padding-bottom: var(--space-2);
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-3);
+    }
+    
+    .detail-item { display: flex; flex-direction: column; gap: var(--space-1); }
+    .detail-label { font-size: var(--text-xs); color: var(--text-muted); }
+    .detail-value { font-size: var(--text-sm); color: var(--text-primary); }
+    .detail-value.price { font-weight: var(--font-bold); color: var(--primary-color); font-size: var(--text-lg); }
+    .detail-value.cost { font-weight: var(--font-medium); }
+    .detail-description { font-size: var(--text-sm); color: var(--text-secondary); line-height: 1.6; }
+    
+    .detail-notes {
+        font-size: var(--text-sm);
+        color: var(--text-secondary);
+        background: var(--bg-secondary);
+        padding: var(--space-3);
+        border-radius: var(--radius-md);
+    }
+    
+    .pricing-display { display: flex; flex-direction: column; gap: var(--space-2); }
+    
+    .price-row {
+        display: flex;
+        justify-content: space-between;
+        padding: var(--space-2);
+        background: var(--bg-secondary);
+        border-radius: var(--radius-sm);
+    }
+    
+    .price-row.main { background: var(--primary-light); }
+    .price-row.main .price-value { font-weight: var(--font-bold); color: var(--primary-color); }
+    .price-row.margin { border-top: 2px solid var(--border-color); margin-top: var(--space-2); }
+    .price-label { font-size: var(--text-sm); color: var(--text-secondary); }
+    .price-value { font-weight: var(--font-medium); font-family: var(--font-mono); }
+    
+    .inventory-display { display: flex; flex-direction: column; gap: var(--space-4); }
+    
+    .inventory-main {
+        text-align: center;
+        padding: var(--space-4);
+        background: var(--bg-secondary);
+        border-radius: var(--radius-md);
+    }
+    
+    .inventory-main.low-stock { background: var(--warning-light); border: 1px solid var(--warning-color); }
+    .inventory-qty { display: block; font-size: var(--text-3xl); font-weight: var(--font-bold); color: var(--text-primary); }
+    .inventory-label { font-size: var(--text-sm); color: var(--text-secondary); display: block; }
+    .low-stock-badge { display: inline-block; margin-top: var(--space-2); font-size: var(--text-sm); color: var(--warning-dark); }
+    
+    .inventory-stats { display: flex; flex-direction: column; gap: var(--space-2); }
+    
+    .inventory-row {
+        display: flex;
+        justify-content: space-between;
+        padding: var(--space-2);
+        font-size: var(--text-sm);
+    }
+    
+    .inventory-row.total {
+        border-top: 1px solid var(--border-color);
+        padding-top: var(--space-3);
+        font-weight: var(--font-semibold);
+    }
+    
+    .stat-label { color: var(--text-secondary); }
+    .stat-value { font-family: var(--font-mono); }
+    
+    .quick-actions-vertical { display: flex; flex-direction: column; gap: var(--space-2); }
+    .btn-block { width: 100%; justify-content: center; }
+    
+    .product-dates { display: flex; flex-direction: column; gap: var(--space-1); }
+    
+    .date-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: var(--text-xs);
+        color: var(--text-muted);
+        padding: var(--space-1) 0;
+    }
+    
+    @@media (max-width: 900px) {
+        .product-detail-grid { grid-template-columns: 1fr; }
+        .detail-grid { grid-template-columns: 1fr; }
+    }
 </style>
 
 @code {
@@ -455,8 +807,10 @@ else
     private List<Account> assetAccounts = new();
     private List<string> categories = new();
     private Product? editingProduct;
+    private Product? viewingProduct;
     private bool isLoading = true;
     private bool isEditing = false;
+    private bool isViewing = false;
     private bool isSaving = false;
     private string searchTerm = "";
     private string filterType = "";
@@ -478,7 +832,7 @@ else
             var product = products.FirstOrDefault(p => p.Id == ProductId.Value);
             if (product != null)
             {
-                EditProduct(product);
+                ViewProduct(product);
             }
         }
     }
@@ -486,6 +840,7 @@ else
     private async Task LoadDataAsync()
     {
         isLoading = true;
+        errorMessage = null;
         try
         {
             products = (await ProductService.GetAllAsync()).ToList();
@@ -493,6 +848,10 @@ else
             expenseAccounts = (await AccountService.GetAccountsByTypeAsync(AccountType.Expense)).ToList();
             assetAccounts = (await AccountService.GetAccountsByTypeAsync(AccountType.Asset)).ToList();
             categories = (await ProductService.GetCategoriesAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading data: {ex.Message}";
         }
         finally
         {
@@ -542,7 +901,34 @@ else
             UnitOfMeasure = "Each"
         };
         isEditing = true;
+        isViewing = false;
+        viewingProduct = null;
         errorMessage = null;
+    }
+
+    private void ViewProduct(Product product)
+    {
+        viewingProduct = product;
+        isViewing = true;
+        isEditing = false;
+        editingProduct = null;
+    }
+
+    private void EditFromView()
+    {
+        if (viewingProduct != null)
+        {
+            EditProduct(viewingProduct);
+        }
+    }
+
+    private void BackToList()
+    {
+        isViewing = false;
+        isEditing = false;
+        viewingProduct = null;
+        editingProduct = null;
+        Navigation.NavigateTo("/products");
     }
 
     private void EditProduct(Product product)
@@ -575,15 +961,27 @@ else
             IsActive = product.IsActive
         };
         isEditing = true;
+        isViewing = false;
         errorMessage = null;
     }
 
     private void CancelEdit()
     {
-        isEditing = false;
-        editingProduct = null;
-        errorMessage = null;
-        Navigation.NavigateTo("/products");
+        if (viewingProduct != null)
+        {
+            // Go back to viewing if we were editing from view
+            isEditing = false;
+            editingProduct = null;
+            errorMessage = null;
+            isViewing = true;
+        }
+        else
+        {
+            isEditing = false;
+            editingProduct = null;
+            errorMessage = null;
+            Navigation.NavigateTo("/products");
+        }
     }
 
     private async Task SaveProductAsync()
@@ -595,16 +993,33 @@ else
         
         try
         {
+            var savedProductId = editingProduct.Id;
+            
             if (editingProduct.Id > 0)
             {
                 await ProductService.UpdateAsync(editingProduct);
             }
             else
             {
-                await ProductService.CreateAsync(editingProduct);
+                var created = await ProductService.CreateAsync(editingProduct);
+                savedProductId = created.Id;
             }
             
             await LoadDataAsync();
+            
+            // If we were editing from view, go back to viewing the updated product
+            if (viewingProduct != null)
+            {
+                var updatedProduct = products.FirstOrDefault(p => p.Id == savedProductId);
+                if (updatedProduct != null)
+                {
+                    ViewProduct(updatedProduct);
+                    isEditing = false;
+                    editingProduct = null;
+                    return;
+                }
+            }
+            
             CancelEdit();
         }
         catch (Exception ex)
@@ -625,10 +1040,28 @@ else
         _ => "badge-secondary"
     };
 
+    private string GetTypeIconClass(ProductType type) => type switch
+    {
+        ProductType.Service => "service",
+        ProductType.Inventory => "inventory",
+        ProductType.NonInventory => "non-inventory",
+        _ => ""
+    };
+
+    private string GetTypeIcon(ProductType type) => type switch
+    {
+        ProductType.Service => "🔧",
+        ProductType.Inventory => "📦",
+        ProductType.NonInventory => "🏷️",
+        _ => "📦"
+    };
+
     private string GetPageTitle()
     {
         if (isEditing)
             return editingProduct?.Id > 0 ? "Edit Product" : "New Product/Service";
+        if (isViewing && viewingProduct != null)
+            return viewingProduct.Name;
         return "Products & Services";
     }
 
@@ -636,6 +1069,8 @@ else
     {
         if (isEditing)
             return editingProduct?.Id > 0 ? $"Editing {editingProduct.Name}" : "Add a new product or service";
+        if (isViewing && viewingProduct != null)
+            return $"{viewingProduct.TypeDisplay} • {viewingProduct.Sku ?? "No SKU"}";
         return "Manage your products, services, and inventory";
     }
 }

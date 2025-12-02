@@ -5,6 +5,41 @@ using Kwikbooks.Data.Models;
 namespace Kwikbooks.Services;
 
 /// <summary>
+/// Represents a transaction in vendor history.
+/// </summary>
+public class VendorTransactionItem
+{
+    public int Id { get; set; }
+    public string TransactionNumber { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+    public string TypeIcon { get; set; } = string.Empty;
+    public DateTime Date { get; set; }
+    public DateTime? DueDate { get; set; }
+    public string? Status { get; set; }
+    public string? StatusClass { get; set; }
+    public decimal Amount { get; set; }
+    public decimal Balance { get; set; }
+    public string? Memo { get; set; }
+    public bool IsCredit { get; set; }
+}
+
+/// <summary>
+/// Vendor balance summary.
+/// </summary>
+public class VendorBalanceSummary
+{
+    public decimal TotalBilled { get; set; }
+    public decimal TotalPayments { get; set; }
+    public decimal CurrentBalance { get; set; }
+    public decimal OverdueAmount { get; set; }
+    public int OpenBills { get; set; }
+    public int OverdueBills { get; set; }
+    public DateTime? LastPaymentDate { get; set; }
+    public decimal LastPaymentAmount { get; set; }
+    public DateTime? OldestOpenBillDate { get; set; }
+}
+
+/// <summary>
 /// Service for managing vendors/suppliers.
 /// </summary>
 public interface IVendorService : IDataService<Vendor>
@@ -53,6 +88,21 @@ public interface IVendorService : IDataService<Vendor>
     /// Gets the count of active vendors.
     /// </summary>
     Task<int> GetActiveVendorCountAsync();
+    
+    /// <summary>
+    /// Gets transaction history for a vendor (bills and payments).
+    /// </summary>
+    Task<IEnumerable<VendorTransactionItem>> GetVendorTransactionsAsync(int vendorId, int? limit = null);
+    
+    /// <summary>
+    /// Gets balance summary for a vendor.
+    /// </summary>
+    Task<VendorBalanceSummary> GetVendorBalanceSummaryAsync(int vendorId);
+    
+    /// <summary>
+    /// Recalculates and updates vendor balance based on bills and payments.
+    /// </summary>
+    Task RecalculateBalanceAsync(int vendorId);
 }
 
 /// <summary>
@@ -168,5 +218,151 @@ public class VendorService : BaseDataService<Vendor>, IVendorService
     public async Task<int> GetActiveVendorCountAsync()
     {
         return await _dbSet.CountAsync(v => v.IsActive);
+    }
+
+    public async Task<IEnumerable<VendorTransactionItem>> GetVendorTransactionsAsync(int vendorId, int? limit = null)
+    {
+        var transactions = new List<VendorTransactionItem>();
+        
+        // Get bills for vendor
+        var bills = await _context.Bills
+            .Where(b => b.VendorId == vendorId)
+            .OrderByDescending(b => b.TransactionDate)
+            .ToListAsync();
+        
+        foreach (var bill in bills)
+        {
+            var (status, statusClass) = GetBillStatusDisplay(bill.Status, bill.IsOverdue);
+            transactions.Add(new VendorTransactionItem
+            {
+                Id = bill.Id,
+                TransactionNumber = bill.TransactionNumber,
+                Type = "Bill",
+                TypeIcon = "📃",
+                Date = bill.TransactionDate,
+                DueDate = bill.DueDate,
+                Status = status,
+                StatusClass = statusClass,
+                Amount = bill.Total,
+                Balance = bill.BalanceDue,
+                Memo = bill.Memo ?? bill.VendorInvoiceNumber,
+                IsCredit = false
+            });
+        }
+        
+        // Get payments to vendor
+        var payments = await _context.Payments
+            .Where(p => p.VendorId == vendorId && p.Direction == PaymentDirection.Made)
+            .OrderByDescending(p => p.TransactionDate)
+            .ToListAsync();
+        
+        foreach (var payment in payments)
+        {
+            transactions.Add(new VendorTransactionItem
+            {
+                Id = payment.Id,
+                TransactionNumber = payment.TransactionNumber,
+                Type = "Payment",
+                TypeIcon = "💸",
+                Date = payment.TransactionDate,
+                Status = "Paid",
+                StatusClass = "badge-success",
+                Amount = payment.Total,
+                Balance = 0,
+                Memo = payment.Memo ?? GetPaymentMethodName(payment.PaymentMethod),
+                IsCredit = true
+            });
+        }
+        
+        // Sort by date descending
+        var sorted = transactions.OrderByDescending(t => t.Date).ThenByDescending(t => t.Id);
+        
+        if (limit.HasValue)
+            return sorted.Take(limit.Value).ToList();
+            
+        return sorted.ToList();
+    }
+
+    public async Task<VendorBalanceSummary> GetVendorBalanceSummaryAsync(int vendorId)
+    {
+        var vendor = await _dbSet.FindAsync(vendorId);
+        if (vendor == null)
+            return new VendorBalanceSummary();
+        
+        var bills = await _context.Bills
+            .Where(b => b.VendorId == vendorId)
+            .ToListAsync();
+        
+        var payments = await _context.Payments
+            .Where(p => p.VendorId == vendorId && p.Direction == PaymentDirection.Made)
+            .OrderByDescending(p => p.TransactionDate)
+            .ToListAsync();
+        
+        var openBills = bills.Where(b => b.Status != BillStatus.Paid && b.Status != BillStatus.Void).ToList();
+        var overdueBills = openBills.Where(b => b.IsOverdue).ToList();
+        var lastPayment = payments.FirstOrDefault();
+        
+        return new VendorBalanceSummary
+        {
+            TotalBilled = bills.Where(b => b.Status != BillStatus.Void).Sum(b => b.Total),
+            TotalPayments = payments.Sum(p => p.Total),
+            CurrentBalance = vendor.Balance,
+            OverdueAmount = overdueBills.Sum(b => b.BalanceDue),
+            OpenBills = openBills.Count,
+            OverdueBills = overdueBills.Count,
+            LastPaymentDate = lastPayment?.TransactionDate,
+            LastPaymentAmount = lastPayment?.Total ?? 0,
+            OldestOpenBillDate = openBills.OrderBy(b => b.TransactionDate).FirstOrDefault()?.TransactionDate
+        };
+    }
+
+    public async Task RecalculateBalanceAsync(int vendorId)
+    {
+        var vendor = await _dbSet.FindAsync(vendorId);
+        if (vendor == null) return;
+        
+        // Sum of unpaid bill balances
+        var billBalance = await _context.Bills
+            .Where(b => b.VendorId == vendorId && 
+                        b.Status != BillStatus.Paid && 
+                        b.Status != BillStatus.Void)
+            .SumAsync(b => b.Total - b.AmountPaid);
+        
+        vendor.Balance = billBalance;
+        vendor.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+    }
+
+    private static (string Status, string Class) GetBillStatusDisplay(BillStatus status, bool isOverdue)
+    {
+        if (isOverdue)
+            return ("Overdue", "badge-danger");
+            
+        return status switch
+        {
+            BillStatus.Draft => ("Draft", "badge-secondary"),
+            BillStatus.Received => ("Received", "badge-info"),
+            BillStatus.PartiallyPaid => ("Partial", "badge-warning"),
+            BillStatus.Paid => ("Paid", "badge-success"),
+            BillStatus.Void => ("Void", "badge-secondary"),
+            _ => ("Unknown", "badge-secondary")
+        };
+    }
+
+    private static string GetPaymentMethodName(PaymentMethod method)
+    {
+        return method switch
+        {
+            PaymentMethod.Cash => "Cash",
+            PaymentMethod.Check => "Check",
+            PaymentMethod.CreditCard => "Credit Card",
+            PaymentMethod.DebitCard => "Debit Card",
+            PaymentMethod.BankTransfer => "Bank Transfer",
+            PaymentMethod.ACH => "ACH",
+            PaymentMethod.Wire => "Wire Transfer",
+            PaymentMethod.PayPal => "PayPal",
+            PaymentMethod.Venmo => "Venmo",
+            _ => "Other"
+        };
     }
 }

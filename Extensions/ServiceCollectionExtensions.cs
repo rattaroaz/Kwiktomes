@@ -69,8 +69,17 @@ public static class ServiceCollectionExtensions
         // Dashboard service
         services.AddScoped<IDashboardService, DashboardService>();
         
-        // Register additional services here as they are created
-        // services.AddScoped<IInvoiceService, InvoiceService>();
+        // Invoice service
+        services.AddScoped<IInvoiceService, InvoiceService>();
+        
+        // Bill service
+        services.AddScoped<IBillService, BillService>();
+        
+        // Invoice PDF service
+        services.AddScoped<IInvoicePdfService, InvoicePdfService>();
+        
+        // Bank service
+        services.AddScoped<IBankService, BankService>();
 
         return services;
     }

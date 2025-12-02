@@ -1,0 +1,1218 @@
+@page "/invoices"
+@page "/invoices/new"
+@page "/invoices/{InvoiceId:int}"
+@inject IInvoiceService InvoiceService
+@inject ICustomerService CustomerService
+@inject IProductService ProductService
+@inject ICompanyService CompanyService
+@inject IInvoicePdfService PdfService
+@inject NavigationManager Navigation
+
+<PageHeader Title="@GetPageTitle()" Subtitle="@GetPageSubtitle()">
+    <ActionContent>
+        @if (isViewing && viewingInvoice != null)
+        {
+            <button class="btn btn-secondary" @onclick="BackToList">
+                ← Back
+            </button>
+            @if (viewingInvoice.Status == InvoiceStatus.Draft)
+            {
+                <button class="btn btn-primary" @onclick="EditFromView">
+                    ✏️ Edit
+                </button>
+            }
+        }
+        else if (!isEditing)
+        {
+            <button class="btn btn-primary" @onclick="CreateNewInvoice">
+                + New Invoice
+            </button>
+        }
+    </ActionContent>
+</PageHeader>
+
+@if (isLoading)
+{
+    <LoadingSpinner Text="Loading..." />
+}
+else if (isViewing && viewingInvoice != null)
+{
+    @* Invoice Detail View *@
+    <div class="invoice-detail-container">
+        <div class="invoice-detail-grid">
+            @* Left Column - Invoice Details *@
+            <div class="invoice-detail-main">
+                <Card>
+                    <ChildContent>
+                        <div class="invoice-header">
+                            <div class="invoice-header-left">
+                                <h2 class="invoice-number">@viewingInvoice.TransactionNumber</h2>
+                                <span class="badge @GetStatusBadgeClass(viewingInvoice.Status, viewingInvoice.IsOverdue)">
+                                    @GetStatusDisplay(viewingInvoice.Status, viewingInvoice.IsOverdue)
+                                </span>
+                            </div>
+                            <div class="invoice-header-right">
+                                <div class="invoice-total">
+                                    <span class="total-label">Total</span>
+                                    <span class="total-value">@viewingInvoice.Total.ToString("C2")</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="invoice-info-grid">
+                            <div class="info-section">
+                                <h4 class="info-title">Customer</h4>
+                                <div class="customer-info">
+                                    <div class="customer-name">@viewingInvoice.Customer.FullName</div>
+                                    @if (!string.IsNullOrEmpty(viewingInvoice.Customer.Email))
+                                    {
+                                        <div class="customer-email">@viewingInvoice.Customer.Email</div>
+                                    }
+                                </div>
+                            </div>
+                            <div class="info-section">
+                                <h4 class="info-title">Dates</h4>
+                                <div class="date-info">
+                                    <div class="date-row">
+                                        <span class="date-label">Invoice Date</span>
+                                        <span class="date-value">@viewingInvoice.TransactionDate.ToString("MMM d, yyyy")</span>
+                                    </div>
+                                    @if (viewingInvoice.DueDate.HasValue)
+                                    {
+                                        <div class="date-row @(viewingInvoice.IsOverdue ? "overdue" : "")">
+                                            <span class="date-label">Due Date</span>
+                                            <span class="date-value">@viewingInvoice.DueDate.Value.ToString("MMM d, yyyy")</span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                            @if (!string.IsNullOrEmpty(viewingInvoice.BillingAddress))
+                            {
+                                <div class="info-section">
+                                    <h4 class="info-title">Billing Address</h4>
+                                    <div class="address-text">@viewingInvoice.BillingAddress</div>
+                                </div>
+                            }
+                        </div>
+                        
+                        <div class="invoice-lines-section">
+                            <h4 class="section-title">Line Items</h4>
+                            <table class="line-items-table">
+                                <thead>
+                                    <tr>
+                                        <th>Description</th>
+                                        <th class="text-right">Qty</th>
+                                        <th class="text-right">Rate</th>
+                                        <th class="text-right">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var line in viewingInvoice.Lines)
+                                    {
+                                        <tr>
+                                            <td>
+                                                @if (line.Product != null)
+                                                {
+                                                    <div class="line-product">@line.Product.Name</div>
+                                                }
+                                                <div class="line-description">@line.Description</div>
+                                            </td>
+                                            <td class="text-right font-mono">@line.Quantity</td>
+                                            <td class="text-right font-mono">@line.UnitPrice.ToString("C2")</td>
+                                            <td class="text-right font-mono">@line.LineTotal.ToString("C2")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                            
+                            <div class="invoice-totals">
+                                <div class="totals-row">
+                                    <span class="totals-label">Subtotal</span>
+                                    <span class="totals-value">@viewingInvoice.Subtotal.ToString("C2")</span>
+                                </div>
+                                @if (viewingInvoice.TaxAmount > 0)
+                                {
+                                    <div class="totals-row">
+                                        <span class="totals-label">Tax</span>
+                                        <span class="totals-value">@viewingInvoice.TaxAmount.ToString("C2")</span>
+                                    </div>
+                                }
+                                @if (viewingInvoice.DiscountAmount > 0)
+                                {
+                                    <div class="totals-row discount">
+                                        <span class="totals-label">Discount</span>
+                                        <span class="totals-value">-@viewingInvoice.DiscountAmount.ToString("C2")</span>
+                                    </div>
+                                }
+                                <div class="totals-row total">
+                                    <span class="totals-label">Total</span>
+                                    <span class="totals-value">@viewingInvoice.Total.ToString("C2")</span>
+                                </div>
+                                @if (viewingInvoice.AmountPaid > 0)
+                                {
+                                    <div class="totals-row paid">
+                                        <span class="totals-label">Paid</span>
+                                        <span class="totals-value">-@viewingInvoice.AmountPaid.ToString("C2")</span>
+                                    </div>
+                                    <div class="totals-row balance">
+                                        <span class="totals-label">Balance Due</span>
+                                        <span class="totals-value">@viewingInvoice.BalanceDue.ToString("C2")</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                        
+                        @if (!string.IsNullOrEmpty(viewingInvoice.CustomerMessage))
+                        {
+                            <div class="invoice-message">
+                                <h4 class="section-title">Message to Customer</h4>
+                                <p>@viewingInvoice.CustomerMessage</p>
+                            </div>
+                        }
+                    </ChildContent>
+                </Card>
+            </div>
+            
+            @* Right Column - Actions & Status *@
+            <div class="invoice-detail-sidebar">
+                <Card Title="Status">
+                    <ChildContent>
+                        <div class="status-display">
+                            <span class="status-badge @GetStatusBadgeClass(viewingInvoice.Status, viewingInvoice.IsOverdue)">
+                                @GetStatusDisplay(viewingInvoice.Status, viewingInvoice.IsOverdue)
+                            </span>
+                            @if (viewingInvoice.IsOverdue)
+                            {
+                                <div class="overdue-info">
+                                    @viewingInvoice.DaysOverdue days overdue
+                                </div>
+                            }
+                        </div>
+                        
+                        <div class="payment-status">
+                            <div class="payment-row">
+                                <span>Total</span>
+                                <span class="font-mono">@viewingInvoice.Total.ToString("C2")</span>
+                            </div>
+                            <div class="payment-row">
+                                <span>Paid</span>
+                                <span class="font-mono text-success">@viewingInvoice.AmountPaid.ToString("C2")</span>
+                            </div>
+                            <div class="payment-row balance">
+                                <span>Balance</span>
+                                <span class="font-mono @(viewingInvoice.BalanceDue > 0 ? "text-danger" : "text-success")">
+                                    @viewingInvoice.BalanceDue.ToString("C2")
+                                </span>
+                            </div>
+                        </div>
+                    </ChildContent>
+                </Card>
+                
+                <Card Title="Actions" CssClass="mt-4">
+                    <ChildContent>
+                        <div class="quick-actions-vertical">
+                            @if (viewingInvoice.Status == InvoiceStatus.Draft)
+                            {
+                                <button class="btn btn-primary btn-block" @onclick="() => MarkAsSent(viewingInvoice.Id)">
+                                    📧 Mark as Sent
+                                </button>
+                                <button class="btn btn-secondary btn-block" @onclick="EditFromView">
+                                    ✏️ Edit Invoice
+                                </button>
+                            }
+                            @if (viewingInvoice.Status != InvoiceStatus.Paid && viewingInvoice.Status != InvoiceStatus.Void)
+                            {
+                                <button class="btn btn-success btn-block" @onclick="() => ShowRecordPayment()">
+                                    💳 Record Payment
+                                </button>
+                            }
+                            <button class="btn btn-secondary btn-block" @onclick="DownloadPdf" disabled="@isGeneratingPdf">
+                                @(isGeneratingPdf ? "Generating..." : "📄 Download PDF")
+                            </button>
+                            @if (viewingInvoice.Status != InvoiceStatus.Void && viewingInvoice.Status != InvoiceStatus.Paid)
+                            {
+                                <button class="btn btn-outline-danger btn-block" @onclick="() => VoidInvoice(viewingInvoice.Id)">
+                                    🚫 Void Invoice
+                                </button>
+                            }
+                        </div>
+                    </ChildContent>
+                </Card>
+                
+                @if (viewingInvoice.PaymentApplications.Any())
+                {
+                    <Card Title="Payment History" CssClass="mt-4">
+                        <ChildContent>
+                            <div class="payment-history">
+                                @foreach (var payment in viewingInvoice.PaymentApplications)
+                                {
+                                    <div class="payment-entry">
+                                        <div class="payment-date">@payment.AppliedDate.ToString("MMM d, yyyy")</div>
+                                        <div class="payment-amount">@payment.AppliedAmount.ToString("C2")</div>
+                                    </div>
+                                }
+                            </div>
+                        </ChildContent>
+                    </Card>
+                }
+            </div>
+        </div>
+    </div>
+    
+    @* Record Payment Modal *@
+    @if (showPaymentModal)
+    {
+        <div class="modal-backdrop" @onclick="ClosePaymentModal">
+            <div class="modal-content" @onclick:stopPropagation="true">
+                <div class="modal-header">
+                    <h3>Record Payment</h3>
+                    <button class="modal-close" @onclick="ClosePaymentModal">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Payment Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" @bind="paymentAmount" step="0.01" />
+                        </div>
+                        <small class="form-text">Balance due: @viewingInvoice.BalanceDue.ToString("C2")</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Payment Date</label>
+                        <input type="date" class="form-control" @bind="paymentDate" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="ClosePaymentModal">Cancel</button>
+                    <button class="btn btn-primary" @onclick="RecordPayment">Record Payment</button>
+                </div>
+            </div>
+        </div>
+    }
+}
+else if (isEditing)
+{
+    @* Invoice Form *@
+    <div class="invoice-form-container">
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger mb-4">@errorMessage</div>
+        }
+        
+        <Card Title="Invoice Details">
+            <ChildContent>
+                <div class="form-row">
+                    <div class="form-group" style="width: 180px;">
+                        <label class="form-label">Invoice #</label>
+                        <input type="text" class="form-control" @bind="editingInvoice.TransactionNumber" 
+                               readonly="@(editingInvoice.Id > 0)" placeholder="Auto-generated" />
+                    </div>
+                    <div class="form-group flex-1">
+                        <label class="form-label form-label-required">Customer</label>
+                        <select class="form-control" @bind="editingInvoice.CustomerId" @bind:after="OnCustomerChanged">
+                            <option value="0">-- Select Customer --</option>
+                            @foreach (var customer in customers)
+                            {
+                                <option value="@customer.Id">@customer.FullName</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group" style="width: 180px;">
+                        <label class="form-label">Invoice Date</label>
+                        <input type="date" class="form-control" @bind="editingInvoice.TransactionDate" />
+                    </div>
+                    <div class="form-group" style="width: 180px;">
+                        <label class="form-label">Due Date</label>
+                        <input type="date" class="form-control" @bind="editingInvoice.DueDate" />
+                    </div>
+                    <div class="form-group" style="width: 150px;">
+                        <label class="form-label">Terms</label>
+                        <input type="text" class="form-control" @bind="editingInvoice.Terms" placeholder="Net 30" />
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label class="form-label">Billing Address</label>
+                        <textarea class="form-control" rows="3" @bind="editingInvoice.BillingAddress"></textarea>
+                    </div>
+                </div>
+            </ChildContent>
+        </Card>
+        
+        <Card Title="Line Items" CssClass="mt-4">
+            <ChildContent>
+                <table class="line-items-edit-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 250px;">Product/Service</th>
+                            <th>Description</th>
+                            <th style="width: 80px;">Qty</th>
+                            <th style="width: 120px;">Rate</th>
+                            <th style="width: 120px;">Amount</th>
+                            <th style="width: 50px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < editingLines.Count; i++)
+                        {
+                            var index = i;
+                            var line = editingLines[index];
+                            <tr>
+                                <td>
+                                    <select class="form-control form-control-sm" 
+                                            value="@line.ProductId"
+                                            @onchange="(e) => OnProductSelected(index, e)">
+                                        <option value="">-- Select --</option>
+                                        @foreach (var product in products)
+                                        {
+                                            <option value="@product.Id">@product.Name</option>
+                                        }
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm" 
+                                           @bind="line.Description" placeholder="Description" />
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm text-right" 
+                                           @bind="line.Quantity" @bind:after="RecalculateLineTotals" step="0.01" />
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm text-right" 
+                                           @bind="line.UnitPrice" @bind:after="RecalculateLineTotals" step="0.01" />
+                                </td>
+                                <td class="text-right font-mono line-total">
+                                    @((line.Quantity * line.UnitPrice).ToString("C2"))
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveLine(index)">×</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                
+                <button class="btn btn-secondary btn-sm mt-3" @onclick="AddLine">
+                    + Add Line
+                </button>
+                
+                <div class="invoice-form-totals">
+                    <div class="totals-row">
+                        <span>Subtotal</span>
+                        <span class="font-mono">@CalculateSubtotal().ToString("C2")</span>
+                    </div>
+                    <div class="totals-row">
+                        <span>Tax</span>
+                        <span class="font-mono">@CalculateTax().ToString("C2")</span>
+                    </div>
+                    <div class="totals-row total">
+                        <span>Total</span>
+                        <span class="font-mono">@CalculateTotal().ToString("C2")</span>
+                    </div>
+                </div>
+            </ChildContent>
+        </Card>
+        
+        <Card Title="Additional Information" CssClass="mt-4">
+            <ChildContent>
+                <div class="form-group">
+                    <label class="form-label">Message to Customer</label>
+                    <textarea class="form-control" rows="2" @bind="editingInvoice.CustomerMessage" 
+                              placeholder="Thank you for your business!"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Memo (internal)</label>
+                    <textarea class="form-control" rows="2" @bind="editingInvoice.Memo" 
+                              placeholder="Internal notes"></textarea>
+                </div>
+            </ChildContent>
+        </Card>
+        
+        <div class="form-actions mt-6">
+            <button type="button" class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+            <button type="button" class="btn btn-primary btn-lg" @onclick="SaveInvoiceAsync" disabled="@isSaving">
+                @(isSaving ? "Saving..." : (editingInvoice.Id > 0 ? "Update Invoice" : "Create Invoice"))
+            </button>
+        </div>
+    </div>
+}
+else if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">
+        <strong>Error:</strong> @errorMessage
+        <button class="btn btn-sm btn-secondary ms-3" @onclick="LoadDataAsync">Retry</button>
+    </div>
+}
+else
+{
+    @* Invoice List *@
+    <div class="invoices-toolbar">
+        <div class="toolbar-left">
+            <div class="search-container" style="width: 300px;">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" placeholder="Search invoices..." 
+                       @bind="searchTerm" @bind:event="oninput" />
+            </div>
+            <select class="form-control" style="width: 150px;" @bind="filterStatus">
+                <option value="">All Status</option>
+                <option value="Draft">Draft</option>
+                <option value="Sent">Sent</option>
+                <option value="Overdue">Overdue</option>
+                <option value="PartiallyPaid">Partial</option>
+                <option value="Paid">Paid</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="invoices-summary">
+        <div class="summary-card">
+            <div class="summary-icon">📄</div>
+            <div class="summary-info">
+                <div class="summary-label">Total Invoices</div>
+                <div class="summary-value">@summary.TotalInvoices</div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon">💰</div>
+            <div class="summary-info">
+                <div class="summary-label">Outstanding</div>
+                <div class="summary-value">@summary.TotalOutstanding.ToString("C2")</div>
+            </div>
+        </div>
+        <div class="summary-card @(summary.OverdueCount > 0 ? "warning" : "")">
+            <div class="summary-icon">⚠️</div>
+            <div class="summary-info">
+                <div class="summary-label">Overdue</div>
+                <div class="summary-value">@summary.TotalOverdue.ToString("C2")</div>
+            </div>
+        </div>
+        <div class="summary-card success">
+            <div class="summary-icon">✅</div>
+            <div class="summary-info">
+                <div class="summary-label">Paid This Month</div>
+                <div class="summary-value">@summary.TotalPaidThisMonth.ToString("C2")</div>
+            </div>
+        </div>
+    </div>
+
+    @if (GetFilteredInvoices().Any())
+    {
+        <Card>
+            <ChildContent>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Customer</th>
+                            <th>Date</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                            <th class="text-right">Total</th>
+                            <th class="text-right">Balance</th>
+                            <th style="width: 80px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var invoice in GetFilteredInvoices())
+                        {
+                            <tr class="cursor-pointer @(invoice.IsOverdue ? "overdue-row" : "")" 
+                                @onclick="() => ViewInvoice(invoice)">
+                                <td class="font-mono">@invoice.TransactionNumber</td>
+                                <td>
+                                    <div class="customer-name">@invoice.Customer.FullName</div>
+                                </td>
+                                <td>@invoice.TransactionDate.ToString("MMM d, yyyy")</td>
+                                <td class="@(invoice.IsOverdue ? "text-danger" : "")">
+                                    @(invoice.DueDate?.ToString("MMM d, yyyy") ?? "—")
+                                </td>
+                                <td>
+                                    <span class="badge @GetStatusBadgeClass(invoice.Status, invoice.IsOverdue)">
+                                        @GetStatusDisplay(invoice.Status, invoice.IsOverdue)
+                                    </span>
+                                </td>
+                                <td class="text-right font-mono">@invoice.Total.ToString("C2")</td>
+                                <td class="text-right font-mono @(invoice.BalanceDue > 0 ? "text-danger" : "text-success")">
+                                    @invoice.BalanceDue.ToString("C2")
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-secondary" @onclick:stopPropagation="true" 
+                                            @onclick="() => ViewInvoice(invoice)">👁️</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </ChildContent>
+        </Card>
+    }
+    else
+    {
+        <Card>
+            <ChildContent>
+                <div class="empty-state">
+                    <span class="empty-state-icon">📄</span>
+                    <div class="empty-state-title">No invoices found</div>
+                    <div class="empty-state-description">
+                        @if (string.IsNullOrEmpty(searchTerm))
+                        {
+                            <span>Create your first invoice to start billing customers.</span>
+                        }
+                        else
+                        {
+                            <span>No invoices match your search criteria.</span>
+                        }
+                    </div>
+                    <button class="btn btn-primary" @onclick="CreateNewInvoice">+ Create Invoice</button>
+                </div>
+            </ChildContent>
+        </Card>
+    }
+}
+
+<style>
+    .invoice-form-container { max-width: 1000px; }
+    
+    .invoices-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-4);
+        gap: var(--space-4);
+        flex-wrap: wrap;
+    }
+    
+    .toolbar-left {
+        display: flex;
+        gap: var(--space-3);
+        align-items: center;
+    }
+    
+    .invoices-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--space-4);
+        margin-bottom: var(--space-4);
+    }
+    
+    .summary-card {
+        background: var(--bg-primary);
+        border-radius: var(--radius-lg);
+        padding: var(--space-4);
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        border: 1px solid var(--border-color);
+    }
+    
+    .summary-card.warning { border-color: var(--warning-color); background: var(--warning-light); }
+    .summary-card.success { border-color: var(--success-color); background: var(--success-light); }
+    
+    .summary-icon { font-size: var(--text-2xl); }
+    .summary-label { font-size: var(--text-sm); color: var(--text-secondary); }
+    .summary-value { font-size: var(--text-xl); font-weight: var(--font-semibold); }
+    
+    .form-row { display: flex; gap: var(--space-4); flex-wrap: wrap; }
+    .form-row .form-group { min-width: 120px; }
+    
+    .form-actions {
+        display: flex;
+        gap: var(--space-3);
+        justify-content: flex-end;
+        padding-top: var(--space-4);
+        border-top: 1px solid var(--border-color);
+    }
+    
+    tr.overdue-row { background: var(--danger-light); }
+    
+    /* Invoice Detail Styles */
+    .invoice-detail-container { max-width: 1200px; }
+    
+    .invoice-detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: var(--space-6);
+    }
+    
+    .invoice-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding-bottom: var(--space-4);
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: var(--space-4);
+    }
+    
+    .invoice-number { margin: 0; font-size: var(--text-2xl); font-family: var(--font-mono); }
+    .invoice-total .total-label { display: block; font-size: var(--text-sm); color: var(--text-secondary); }
+    .invoice-total .total-value { font-size: var(--text-2xl); font-weight: var(--font-bold); }
+    
+    .invoice-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--space-4);
+        margin-bottom: var(--space-6);
+    }
+    
+    .info-section { }
+    .info-title { font-size: var(--text-sm); font-weight: var(--font-semibold); color: var(--text-secondary); margin-bottom: var(--space-2); }
+    .customer-name { font-weight: var(--font-medium); }
+    .customer-email { font-size: var(--text-sm); color: var(--text-muted); }
+    .date-row { display: flex; justify-content: space-between; font-size: var(--text-sm); padding: var(--space-1) 0; }
+    .date-row.overdue { color: var(--danger-color); font-weight: var(--font-medium); }
+    .address-text { font-size: var(--text-sm); white-space: pre-line; }
+    
+    .section-title { font-size: var(--text-sm); font-weight: var(--font-semibold); color: var(--text-secondary); margin-bottom: var(--space-3); }
+    
+    .line-items-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .line-items-table th {
+        text-align: left;
+        padding: var(--space-2) var(--space-3);
+        border-bottom: 2px solid var(--border-color);
+        font-size: var(--text-sm);
+        font-weight: var(--font-semibold);
+        color: var(--text-secondary);
+    }
+    
+    .line-items-table td {
+        padding: var(--space-3);
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .line-product { font-weight: var(--font-medium); }
+    .line-description { font-size: var(--text-sm); color: var(--text-secondary); }
+    
+    .invoice-totals {
+        margin-top: var(--space-4);
+        padding-top: var(--space-4);
+        border-top: 2px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: var(--space-2);
+    }
+    
+    .totals-row {
+        display: flex;
+        justify-content: space-between;
+        width: 250px;
+        padding: var(--space-2);
+    }
+    
+    .totals-row.discount { color: var(--success-color); }
+    .totals-row.total { font-weight: var(--font-bold); font-size: var(--text-lg); background: var(--bg-secondary); border-radius: var(--radius-sm); }
+    .totals-row.paid { color: var(--success-color); }
+    .totals-row.balance { font-weight: var(--font-bold); color: var(--danger-color); }
+    
+    .invoice-message { margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--border-color); }
+    .invoice-message p { font-size: var(--text-sm); color: var(--text-secondary); font-style: italic; }
+    
+    .status-display { text-align: center; padding: var(--space-4); }
+    .status-badge { font-size: var(--text-lg); padding: var(--space-2) var(--space-4); }
+    .overdue-info { margin-top: var(--space-2); font-size: var(--text-sm); color: var(--danger-color); }
+    
+    .payment-status { margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--border-color); }
+    .payment-row { display: flex; justify-content: space-between; padding: var(--space-2) 0; font-size: var(--text-sm); }
+    .payment-row.balance { font-weight: var(--font-bold); padding-top: var(--space-3); border-top: 1px solid var(--border-color); }
+    
+    .payment-history { display: flex; flex-direction: column; gap: var(--space-2); }
+    .payment-entry { display: flex; justify-content: space-between; font-size: var(--text-sm); padding: var(--space-2); background: var(--bg-secondary); border-radius: var(--radius-sm); }
+    
+    .quick-actions-vertical { display: flex; flex-direction: column; gap: var(--space-2); }
+    .btn-block { width: 100%; justify-content: center; }
+    
+    /* Line Items Edit Table */
+    .line-items-edit-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .line-items-edit-table th {
+        text-align: left;
+        padding: var(--space-2);
+        border-bottom: 2px solid var(--border-color);
+        font-size: var(--text-sm);
+        color: var(--text-secondary);
+    }
+    
+    .line-items-edit-table td {
+        padding: var(--space-2);
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: top;
+    }
+    
+    .line-total { padding-top: var(--space-3) !important; }
+    
+    .invoice-form-totals {
+        margin-top: var(--space-4);
+        padding-top: var(--space-4);
+        border-top: 2px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: var(--space-2);
+    }
+    
+    /* Modal */
+    .modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+    
+    .modal-content {
+        background: var(--bg-primary);
+        border-radius: var(--radius-lg);
+        width: 100%;
+        max-width: 400px;
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--space-4);
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .modal-header h3 { margin: 0; }
+    .modal-close { background: none; border: none; font-size: var(--text-2xl); cursor: pointer; color: var(--text-muted); }
+    
+    .modal-body { padding: var(--space-4); }
+    
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--space-3);
+        padding: var(--space-4);
+        border-top: 1px solid var(--border-color);
+    }
+    
+    @@media (max-width: 900px) {
+        .invoice-detail-grid { grid-template-columns: 1fr; }
+        .invoice-info-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+@code {
+    [Parameter]
+    public int? InvoiceId { get; set; }
+    
+    private List<Invoice> invoices = new();
+    private List<Customer> customers = new();
+    private List<Product> products = new();
+    private Invoice editingInvoice = new();
+    private Invoice? viewingInvoice;
+    private List<InvoiceLine> editingLines = new();
+    private InvoiceSummary summary = new();
+    private bool isLoading = true;
+    private bool isEditing = false;
+    private bool isViewing = false;
+    private bool isSaving = false;
+    private string searchTerm = "";
+    private string filterStatus = "";
+    private string? errorMessage;
+    private Company? company;
+    private bool isGeneratingPdf = false;
+    
+    // Payment modal
+    private bool showPaymentModal = false;
+    private decimal paymentAmount = 0;
+    private DateTime paymentDate = DateTime.Today;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+        
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        if (uri.AbsolutePath.EndsWith("/new", StringComparison.OrdinalIgnoreCase))
+        {
+            CreateNewInvoice();
+        }
+        else if (InvoiceId.HasValue && InvoiceId.Value > 0)
+        {
+            var invoice = await InvoiceService.GetByIdWithDetailsAsync(InvoiceId.Value);
+            if (invoice != null)
+            {
+                ViewInvoice(invoice);
+            }
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            invoices = (await InvoiceService.GetAllWithDetailsAsync()).ToList();
+            customers = (await CustomerService.GetActiveCustomersAsync()).ToList();
+            products = (await ProductService.GetSellableProductsAsync()).ToList();
+            summary = await InvoiceService.GetInvoiceSummaryAsync();
+            company = await CompanyService.GetCompanyAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading data: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private IEnumerable<Invoice> GetFilteredInvoices()
+    {
+        var filtered = invoices.AsEnumerable();
+        
+        if (!string.IsNullOrEmpty(filterStatus))
+        {
+            if (filterStatus == "Overdue")
+            {
+                filtered = filtered.Where(i => i.IsOverdue);
+            }
+            else if (Enum.TryParse<InvoiceStatus>(filterStatus, out var status))
+            {
+                filtered = filtered.Where(i => i.Status == status);
+            }
+        }
+        
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.ToLower();
+            filtered = filtered.Where(i =>
+                i.TransactionNumber.ToLower().Contains(term) ||
+                i.Customer.Name.ToLower().Contains(term) ||
+                (i.Customer.CompanyName?.ToLower().Contains(term) ?? false));
+        }
+        
+        return filtered;
+    }
+
+    private void CreateNewInvoice()
+    {
+        editingInvoice = new Invoice
+        {
+            TransactionDate = DateTime.Today,
+            DueDate = DateTime.Today.AddDays(30),
+            Terms = "Net 30",
+            Status = InvoiceStatus.Draft
+        };
+        editingLines = new List<InvoiceLine> { new InvoiceLine { Quantity = 1 } };
+        isEditing = true;
+        isViewing = false;
+        viewingInvoice = null;
+        errorMessage = null;
+    }
+
+    private void ViewInvoice(Invoice invoice)
+    {
+        viewingInvoice = invoice;
+        isViewing = true;
+        isEditing = false;
+    }
+
+    private void EditFromView()
+    {
+        if (viewingInvoice == null) return;
+        
+        editingInvoice = new Invoice
+        {
+            Id = viewingInvoice.Id,
+            TransactionNumber = viewingInvoice.TransactionNumber,
+            CustomerId = viewingInvoice.CustomerId,
+            TransactionDate = viewingInvoice.TransactionDate,
+            DueDate = viewingInvoice.DueDate,
+            BillingAddress = viewingInvoice.BillingAddress,
+            ShippingAddress = viewingInvoice.ShippingAddress,
+            Terms = viewingInvoice.Terms,
+            CustomerMessage = viewingInvoice.CustomerMessage,
+            Memo = viewingInvoice.Memo,
+            DiscountAmount = viewingInvoice.DiscountAmount,
+            Status = viewingInvoice.Status
+        };
+        
+        editingLines = viewingInvoice.Lines.Select(l => new InvoiceLine
+        {
+            Id = l.Id,
+            ProductId = l.ProductId,
+            Description = l.Description,
+            Quantity = l.Quantity,
+            UnitPrice = l.UnitPrice,
+            DiscountPercent = l.DiscountPercent,
+            TaxRate = l.TaxRate,
+            IsTaxable = l.IsTaxable,
+            SortOrder = l.SortOrder
+        }).ToList();
+        
+        if (!editingLines.Any())
+        {
+            editingLines.Add(new InvoiceLine { Quantity = 1 });
+        }
+        
+        isEditing = true;
+        isViewing = false;
+        errorMessage = null;
+    }
+
+    private void BackToList()
+    {
+        isViewing = false;
+        isEditing = false;
+        viewingInvoice = null;
+        Navigation.NavigateTo("/invoices");
+    }
+
+    private void CancelEdit()
+    {
+        if (viewingInvoice != null)
+        {
+            isEditing = false;
+            isViewing = true;
+        }
+        else
+        {
+            isEditing = false;
+            Navigation.NavigateTo("/invoices");
+        }
+    }
+
+    private void OnCustomerChanged()
+    {
+        var customer = customers.FirstOrDefault(c => c.Id == editingInvoice.CustomerId);
+        if (customer != null)
+        {
+            editingInvoice.BillingAddress = customer.BillingAddressFull;
+            editingInvoice.Terms = customer.PaymentTerms;
+            editingInvoice.DueDate = DateTime.Today.AddDays(customer.PaymentTermsDays);
+        }
+    }
+
+    private void OnProductSelected(int lineIndex, ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int productId))
+        {
+            var product = products.FirstOrDefault(p => p.Id == productId);
+            if (product != null && lineIndex < editingLines.Count)
+            {
+                editingLines[lineIndex].ProductId = productId;
+                editingLines[lineIndex].Description = product.SalesDescription ?? product.Name;
+                editingLines[lineIndex].UnitPrice = product.SalesPrice;
+                editingLines[lineIndex].IsTaxable = product.IsTaxable;
+                StateHasChanged();
+            }
+        }
+        else
+        {
+            editingLines[lineIndex].ProductId = null;
+        }
+    }
+
+    private void AddLine()
+    {
+        editingLines.Add(new InvoiceLine { Quantity = 1 });
+    }
+
+    private void RemoveLine(int index)
+    {
+        if (editingLines.Count > 1)
+        {
+            editingLines.RemoveAt(index);
+        }
+    }
+
+    private void RecalculateLineTotals()
+    {
+        StateHasChanged();
+    }
+
+    private decimal CalculateSubtotal() => editingLines.Sum(l => l.Quantity * l.UnitPrice);
+    private decimal CalculateTax() => editingLines.Where(l => l.IsTaxable).Sum(l => l.Quantity * l.UnitPrice * (l.TaxRate / 100));
+    private decimal CalculateTotal() => CalculateSubtotal() + CalculateTax() - editingInvoice.DiscountAmount;
+
+    private async Task SaveInvoiceAsync()
+    {
+        if (editingInvoice.CustomerId == 0)
+        {
+            errorMessage = "Please select a customer";
+            return;
+        }
+        
+        if (!editingLines.Any(l => l.Quantity > 0 && l.UnitPrice > 0))
+        {
+            errorMessage = "Please add at least one line item";
+            return;
+        }
+        
+        isSaving = true;
+        errorMessage = null;
+        
+        try
+        {
+            var linesToSave = editingLines
+                .Where(l => l.Quantity > 0 || !string.IsNullOrEmpty(l.Description))
+                .ToList();
+            
+            Invoice saved;
+            if (editingInvoice.Id > 0)
+            {
+                saved = await InvoiceService.UpdateWithLinesAsync(editingInvoice, linesToSave);
+            }
+            else
+            {
+                saved = await InvoiceService.CreateWithLinesAsync(editingInvoice, linesToSave);
+            }
+            
+            await LoadDataAsync();
+            
+            var updatedInvoice = await InvoiceService.GetByIdWithDetailsAsync(saved.Id);
+            if (updatedInvoice != null)
+            {
+                ViewInvoice(updatedInvoice);
+            }
+            else
+            {
+                BackToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving invoice: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task MarkAsSent(int invoiceId)
+    {
+        await InvoiceService.MarkAsSentAsync(invoiceId);
+        await LoadDataAsync();
+        var updated = await InvoiceService.GetByIdWithDetailsAsync(invoiceId);
+        if (updated != null) ViewInvoice(updated);
+    }
+
+    private async Task VoidInvoice(int invoiceId)
+    {
+        await InvoiceService.VoidInvoiceAsync(invoiceId);
+        await LoadDataAsync();
+        BackToList();
+    }
+
+    private async Task DownloadPdf()
+    {
+        if (viewingInvoice == null) return;
+        
+        isGeneratingPdf = true;
+        StateHasChanged();
+        
+        try
+        {
+            var filePath = await PdfService.GenerateAndSaveAsync(viewingInvoice, company);
+            
+            // Open the PDF file
+            await Launcher.OpenAsync(new OpenFileRequest
+            {
+                File = new ReadOnlyFile(filePath)
+            });
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error generating PDF: {ex.Message}";
+        }
+        finally
+        {
+            isGeneratingPdf = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ShowRecordPayment()
+    {
+        if (viewingInvoice == null) return;
+        paymentAmount = viewingInvoice.BalanceDue;
+        paymentDate = DateTime.Today;
+        showPaymentModal = true;
+    }
+
+    private void ClosePaymentModal()
+    {
+        showPaymentModal = false;
+    }
+
+    private async Task RecordPayment()
+    {
+        if (viewingInvoice == null || paymentAmount <= 0) return;
+        
+        // Create a simple payment record - in a full implementation, 
+        // this would create a proper Payment entity
+        await InvoiceService.ApplyPaymentAsync(viewingInvoice.Id, paymentAmount, 0);
+        
+        showPaymentModal = false;
+        await LoadDataAsync();
+        var updated = await InvoiceService.GetByIdWithDetailsAsync(viewingInvoice.Id);
+        if (updated != null) ViewInvoice(updated);
+    }
+
+    private string GetStatusBadgeClass(InvoiceStatus status, bool isOverdue)
+    {
+        if (isOverdue) return "badge-danger";
+        return status switch
+        {
+            InvoiceStatus.Draft => "badge-secondary",
+            InvoiceStatus.Sent => "badge-info",
+            InvoiceStatus.PartiallyPaid => "badge-warning",
+            InvoiceStatus.Paid => "badge-success",
+            InvoiceStatus.Void => "badge-secondary",
+            _ => "badge-secondary"
+        };
+    }
+
+    private string GetStatusDisplay(InvoiceStatus status, bool isOverdue)
+    {
+        if (isOverdue) return "Overdue";
+        return status switch
+        {
+            InvoiceStatus.Draft => "Draft",
+            InvoiceStatus.Sent => "Sent",
+            InvoiceStatus.PartiallyPaid => "Partial",
+            InvoiceStatus.Paid => "Paid",
+            InvoiceStatus.Void => "Void",
+            _ => "Unknown"
+        };
+    }
+
+    private string GetPageTitle()
+    {
+        if (isEditing)
+            return editingInvoice.Id > 0 ? "Edit Invoice" : "New Invoice";
+        if (isViewing && viewingInvoice != null)
+            return viewingInvoice.TransactionNumber;
+        return "Invoices";
+    }
+
+    private string GetPageSubtitle()
+    {
+        if (isEditing)
+            return editingInvoice.Id > 0 ? $"Editing {editingInvoice.TransactionNumber}" : "Create a new invoice";
+        if (isViewing && viewingInvoice != null)
+            return viewingInvoice.Customer.FullName;
+        return "Manage your invoices and track payments";
+    }
+}

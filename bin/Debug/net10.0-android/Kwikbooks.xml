@@ -57,6 +57,106 @@
             Display order for sorting.
             </summary>
         </member>
+        <member name="T:Kwikbooks.Data.Models.BankAccount">
+            <summary>
+            Represents a bank account for tracking banking transactions.
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.BankAccount.CurrentBalance">
+            <summary>
+            Current balance as of last reconciliation or manual entry.
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.BankAccount.OpeningBalance">
+            <summary>
+            Opening balance when the account was added.
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.BankAccount.OpeningBalanceDate">
+            <summary>
+            Date of opening balance.
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.BankAccount.LastReconciledDate">
+            <summary>
+            Last reconciled date.
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.BankAccount.LastReconciledBalance">
+            <summary>
+            Statement ending balance from last reconciliation.
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.BankAccount.LinkedAccountId">
+            <summary>
+            Linked Chart of Accounts account (Asset account).
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.BankAccount.Transactions">
+            <summary>
+            Bank transactions for this account.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Data.Models.BankTransaction">
+            <summary>
+            Bank transaction record for deposits, withdrawals, and transfers.
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.BankTransaction.Amount">
+            <summary>
+            Positive for deposits, negative for withdrawals.
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.BankTransaction.RunningBalance">
+            <summary>
+            Running balance after this transaction.
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.BankTransaction.CategoryAccountId">
+            <summary>
+            Category account for this transaction.
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.BankTransaction.TransferAccountId">
+            <summary>
+            For transfers, the other bank account involved.
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.BankTransaction.VendorId">
+            <summary>
+            Linked vendor for expenses.
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.BankTransaction.CustomerId">
+            <summary>
+            Linked customer for deposits.
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.BankTransaction.IsReconciled">
+            <summary>
+            Whether this transaction has been reconciled.
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.BankTransaction.ReconciledDate">
+            <summary>
+            Date when the transaction was reconciled.
+            </summary>
+        </member>
+        <member name="P:Kwikbooks.Data.Models.BankTransaction.IsCleared">
+            <summary>
+            Whether this transaction was cleared by the bank.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Data.Models.BankAccountType">
+            <summary>
+            Types of bank accounts.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Data.Models.BankTransactionType">
+            <summary>
+            Types of bank transactions.
+            </summary>
+        </member>
         <member name="T:Kwikbooks.Data.Models.BaseEntity">
             <summary>
             Base entity class for all database models.
@@ -625,11 +725,131 @@
             Implementation of the account service.
             </summary>
         </member>
+        <member name="T:Kwikbooks.Services.IBankService">
+            <summary>
+            Service for managing bank accounts and transactions.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.BankingSummary">
+            <summary>
+            Summary of banking across all accounts.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.ReconciliationSummary">
+            <summary>
+            Summary for reconciliation.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.ImportResult">
+            <summary>
+            Result of import operation.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.ImportedTransaction">
+            <summary>
+            Transaction data from import.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.BankService">
+            <summary>
+            Implementation of the bank service.
+            </summary>
+        </member>
         <member name="T:Kwikbooks.Services.BaseDataService`1">
             <summary>
             Base implementation of data service providing common CRUD operations.
             </summary>
             <typeparam name="T">The entity type inheriting from BaseEntity</typeparam>
+        </member>
+        <member name="T:Kwikbooks.Services.IBillService">
+            <summary>
+            Service for managing bills and expenses.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IBillService.GetAllWithDetailsAsync">
+            <summary>
+            Gets all bills with related data.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IBillService.GetByIdWithDetailsAsync(System.Int32)">
+            <summary>
+            Gets a bill by ID with all related data.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IBillService.GetByStatusAsync(Kwikbooks.Data.Models.BillStatus)">
+            <summary>
+            Gets bills by status.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IBillService.GetByVendorAsync(System.Int32)">
+            <summary>
+            Gets bills for a specific vendor.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IBillService.GetOverdueBillsAsync">
+            <summary>
+            Gets overdue bills.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IBillService.GetNextBillNumberAsync">
+            <summary>
+            Gets the next bill number.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IBillService.CreateWithLinesAsync(Kwikbooks.Data.Models.Bill,System.Collections.Generic.List{Kwikbooks.Data.Models.BillLine})">
+            <summary>
+            Creates a bill with line items.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IBillService.UpdateWithLinesAsync(Kwikbooks.Data.Models.Bill,System.Collections.Generic.List{Kwikbooks.Data.Models.BillLine})">
+            <summary>
+            Updates a bill with line items.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IBillService.UpdateStatusAsync(System.Int32,Kwikbooks.Data.Models.BillStatus)">
+            <summary>
+            Updates bill status.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IBillService.ApplyPaymentAsync(System.Int32,System.Decimal,System.Int32)">
+            <summary>
+            Applies a payment to a bill.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IBillService.GetBillSummaryAsync">
+            <summary>
+            Gets bill summary statistics.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IBillService.SearchBillsAsync(System.String)">
+            <summary>
+            Searches bills.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IBillService.VoidBillAsync(System.Int32)">
+            <summary>
+            Voids a bill.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IBillService.GetExpenseAccountsAsync">
+            <summary>
+            Gets all expense categories (unique account names used in bills).
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IBillService.CreateQuickExpenseAsync(System.Int32,System.Int32,System.Decimal,System.String,System.DateTime)">
+            <summary>
+            Creates a quick expense (single-line bill).
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.BillSummary">
+            <summary>
+            Bill summary statistics.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.BillService">
+            <summary>
+            Implementation of the bill service.
+            </summary>
         </member>
         <member name="T:Kwikbooks.Services.ICompanyService">
             <summary>
@@ -683,6 +903,16 @@
             Implementation of the company service.
             </summary>
         </member>
+        <member name="T:Kwikbooks.Services.CustomerTransactionItem">
+            <summary>
+            Represents a transaction in customer history.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.CustomerBalanceSummary">
+            <summary>
+            Customer balance summary.
+            </summary>
+        </member>
         <member name="T:Kwikbooks.Services.ICustomerService">
             <summary>
             Service for managing customers.
@@ -726,6 +956,21 @@
         <member name="M:Kwikbooks.Services.ICustomerService.GetActiveCustomerCountAsync">
             <summary>
             Gets the count of active customers.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.ICustomerService.GetCustomerTransactionsAsync(System.Int32,System.Nullable{System.Int32})">
+            <summary>
+            Gets transaction history for a customer (invoices and payments).
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.ICustomerService.GetCustomerBalanceSummaryAsync(System.Int32)">
+            <summary>
+            Gets balance summary for a customer.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.ICustomerService.RecalculateBalanceAsync(System.Int32)">
+            <summary>
+            Recalculates and updates customer balance based on invoices and payments.
             </summary>
         </member>
         <member name="T:Kwikbooks.Services.CustomerService">
@@ -774,6 +1019,121 @@
             Generic data service interface for CRUD operations.
             </summary>
             <typeparam name="T">The entity type</typeparam>
+        </member>
+        <member name="T:Kwikbooks.Services.IInvoicePdfService">
+            <summary>
+            Service for generating invoice PDFs.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IInvoicePdfService.GenerateInvoicePdf(Kwikbooks.Data.Models.Invoice,Kwikbooks.Data.Models.Company)">
+            <summary>
+            Generates a PDF for the given invoice.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IInvoicePdfService.GenerateAndSaveAsync(Kwikbooks.Data.Models.Invoice,Kwikbooks.Data.Models.Company)">
+            <summary>
+            Generates and saves a PDF to a file.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.InvoicePdfService">
+            <summary>
+            Implementation of invoice PDF generation using QuestPDF.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.InvoiceDocument">
+            <summary>
+            QuestPDF document for invoices.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.IInvoiceService">
+            <summary>
+            Service for managing invoices.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IInvoiceService.GetAllWithDetailsAsync">
+            <summary>
+            Gets all invoices with related data.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IInvoiceService.GetByIdWithDetailsAsync(System.Int32)">
+            <summary>
+            Gets an invoice by ID with all related data.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IInvoiceService.GetByStatusAsync(Kwikbooks.Data.Models.InvoiceStatus)">
+            <summary>
+            Gets invoices by status.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IInvoiceService.GetByCustomerAsync(System.Int32)">
+            <summary>
+            Gets invoices for a specific customer.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IInvoiceService.GetOverdueInvoicesAsync">
+            <summary>
+            Gets overdue invoices.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IInvoiceService.GetNextInvoiceNumberAsync">
+            <summary>
+            Gets the next invoice number.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IInvoiceService.CreateWithLinesAsync(Kwikbooks.Data.Models.Invoice,System.Collections.Generic.List{Kwikbooks.Data.Models.InvoiceLine})">
+            <summary>
+            Creates an invoice with line items.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IInvoiceService.UpdateWithLinesAsync(Kwikbooks.Data.Models.Invoice,System.Collections.Generic.List{Kwikbooks.Data.Models.InvoiceLine})">
+            <summary>
+            Updates an invoice with line items.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IInvoiceService.UpdateStatusAsync(System.Int32,Kwikbooks.Data.Models.InvoiceStatus)">
+            <summary>
+            Updates invoice status.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IInvoiceService.MarkAsSentAsync(System.Int32)">
+            <summary>
+            Marks an invoice as sent.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IInvoiceService.ApplyPaymentAsync(System.Int32,System.Decimal,System.Int32)">
+            <summary>
+            Applies a payment to an invoice.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IInvoiceService.GetInvoiceSummaryAsync">
+            <summary>
+            Gets invoice summary statistics.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IInvoiceService.SearchInvoicesAsync(System.String)">
+            <summary>
+            Searches invoices.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IInvoiceService.VoidInvoiceAsync(System.Int32)">
+            <summary>
+            Voids an invoice.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IInvoiceService.RecalculateTotalsAsync(System.Int32)">
+            <summary>
+            Recalculates invoice totals from line items.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.InvoiceSummary">
+            <summary>
+            Invoice summary statistics.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.InvoiceService">
+            <summary>
+            Implementation of the invoice service.
+            </summary>
         </member>
         <member name="T:Kwikbooks.Services.IJournalEntryService">
             <summary>
@@ -900,6 +1260,16 @@
             Implementation of the product service.
             </summary>
         </member>
+        <member name="T:Kwikbooks.Services.VendorTransactionItem">
+            <summary>
+            Represents a transaction in vendor history.
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.VendorBalanceSummary">
+            <summary>
+            Vendor balance summary.
+            </summary>
+        </member>
         <member name="T:Kwikbooks.Services.IVendorService">
             <summary>
             Service for managing vendors/suppliers.
@@ -948,6 +1318,21 @@
         <member name="M:Kwikbooks.Services.IVendorService.GetActiveVendorCountAsync">
             <summary>
             Gets the count of active vendors.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IVendorService.GetVendorTransactionsAsync(System.Int32,System.Nullable{System.Int32})">
+            <summary>
+            Gets transaction history for a vendor (bills and payments).
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IVendorService.GetVendorBalanceSummaryAsync(System.Int32)">
+            <summary>
+            Gets balance summary for a vendor.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.IVendorService.RecalculateBalanceAsync(System.Int32)">
+            <summary>
+            Recalculates and updates vendor balance based on bills and payments.
             </summary>
         </member>
         <member name="T:Kwikbooks.Services.VendorService">

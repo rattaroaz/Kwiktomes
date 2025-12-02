@@ -7,6 +7,13 @@
 {
     <LoadingSpinner Text="Loading company settings..." />
 }
+else if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">
+        <strong>Error:</strong> @errorMessage
+        <button class="btn btn-sm btn-secondary ms-3" @onclick="LoadDataAsync">Retry</button>
+    </div>
+}
 else if (company != null)
 {
     <div class="settings-container">
@@ -469,12 +476,24 @@ else if (company != null)
     private bool isSaving = false;
     private bool showSuccessMessage = false;
     private string activeTab = "profile";
+    private string? errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
         try
         {
             company = await CompanyService.GetCompanyAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading settings: {ex.Message}";
         }
         finally
         {

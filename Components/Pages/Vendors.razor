@@ -7,7 +7,16 @@
 
 <PageHeader Title="@GetPageTitle()" Subtitle="@GetPageSubtitle()">
     <ActionContent>
-        @if (!isEditing)
+        @if (isViewing && viewingVendor != null)
+        {
+            <button class="btn btn-secondary" @onclick="BackToList">
+                ← Back
+            </button>
+            <button class="btn btn-primary" @onclick="EditFromView">
+                ✏️ Edit
+            </button>
+        }
+        else if (!isEditing)
         {
             <button class="btn btn-primary" @onclick="CreateNewVendor">
                 + New Vendor
@@ -19,6 +28,290 @@
 @if (isLoading)
 {
     <LoadingSpinner Text="Loading..." />
+}
+else if (isViewing && viewingVendor != null)
+{
+    @* Vendor Detail View *@
+    <div class="vendor-detail-container">
+        <div class="vendor-detail-grid">
+            @* Left Column - Vendor Info *@
+            <div class="vendor-detail-main">
+                <Card Title="Vendor Information">
+                    <ChildContent>
+                        <div class="detail-header">
+                            <div class="vendor-avatar-lg">@viewingVendor.Initials</div>
+                            <div class="detail-header-info">
+                                <h2 class="detail-name">
+                                    @viewingVendor.FullName
+                                    @if (viewingVendor.IsEligibleFor1099)
+                                    {
+                                        <span class="badge badge-info ml-2">1099</span>
+                                    }
+                                </h2>
+                                @if (!string.IsNullOrEmpty(viewingVendor.CompanyName) && viewingVendor.CompanyName != viewingVendor.Name)
+                                {
+                                    <div class="detail-company">@viewingVendor.CompanyName</div>
+                                }
+                                <div class="detail-number">@viewingVendor.VendorNumber</div>
+                            </div>
+                            <div class="detail-status">
+                                @if (viewingVendor.IsActive)
+                                {
+                                    <span class="badge badge-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-secondary">Inactive</span>
+                                }
+                            </div>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4 class="detail-section-title">Contact Information</h4>
+                            <div class="detail-grid">
+                                @if (!string.IsNullOrEmpty(viewingVendor.ContactName))
+                                {
+                                    <div class="detail-item">
+                                        <span class="detail-label">👤 Contact</span>
+                                        <span class="detail-value">@viewingVendor.ContactName</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(viewingVendor.Email))
+                                {
+                                    <div class="detail-item">
+                                        <span class="detail-label">📧 Email</span>
+                                        <span class="detail-value">@viewingVendor.Email</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(viewingVendor.Phone))
+                                {
+                                    <div class="detail-item">
+                                        <span class="detail-label">📞 Phone</span>
+                                        <span class="detail-value">@viewingVendor.Phone</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(viewingVendor.Mobile))
+                                {
+                                    <div class="detail-item">
+                                        <span class="detail-label">📱 Mobile</span>
+                                        <span class="detail-value">@viewingVendor.Mobile</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(viewingVendor.Website))
+                                {
+                                    <div class="detail-item">
+                                        <span class="detail-label">🌐 Website</span>
+                                        <span class="detail-value">@viewingVendor.Website</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                        
+                        @if (!string.IsNullOrEmpty(viewingVendor.AddressFull))
+                        {
+                            <div class="detail-section">
+                                <h4 class="detail-section-title">Address</h4>
+                                <div class="detail-address">
+                                    @if (!string.IsNullOrEmpty(viewingVendor.Address1))
+                                    {
+                                        <div>@viewingVendor.Address1</div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(viewingVendor.Address2))
+                                    {
+                                        <div>@viewingVendor.Address2</div>
+                                    }
+                                    <div>@viewingVendor.City, @viewingVendor.State @viewingVendor.PostalCode</div>
+                                    @if (!string.IsNullOrEmpty(viewingVendor.Country))
+                                    {
+                                        <div>@viewingVendor.Country</div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        
+                        @if (!string.IsNullOrEmpty(viewingVendor.Notes))
+                        {
+                            <div class="detail-section">
+                                <h4 class="detail-section-title">Notes</h4>
+                                <div class="detail-notes">@viewingVendor.Notes</div>
+                            </div>
+                        }
+                    </ChildContent>
+                </Card>
+            </div>
+            
+            @* Right Column - Financial Info *@
+            <div class="vendor-detail-sidebar">
+                <Card Title="Balance Summary">
+                    <ChildContent>
+                        <div class="financial-stat primary">
+                            <span class="financial-label">Current Balance</span>
+                            <span class="financial-value @(balanceSummary.CurrentBalance > 0 ? "text-warning" : "text-success")">
+                                @balanceSummary.CurrentBalance.ToString("C2")
+                            </span>
+                        </div>
+                        
+                        @if (balanceSummary.OverdueAmount > 0)
+                        {
+                            <div class="overdue-warning">
+                                <span class="overdue-icon">⚠️</span>
+                                <div class="overdue-info">
+                                    <span class="overdue-label">Overdue</span>
+                                    <span class="overdue-value">@balanceSummary.OverdueAmount.ToString("C2")</span>
+                                </div>
+                            </div>
+                        }
+                        
+                        <div class="balance-stats">
+                            <div class="balance-stat-row">
+                                <span class="balance-stat-label">Total Billed</span>
+                                <span class="balance-stat-value">@balanceSummary.TotalBilled.ToString("C2")</span>
+                            </div>
+                            <div class="balance-stat-row">
+                                <span class="balance-stat-label">Total Payments</span>
+                                <span class="balance-stat-value text-success">@balanceSummary.TotalPayments.ToString("C2")</span>
+                            </div>
+                            <div class="balance-stat-row">
+                                <span class="balance-stat-label">Open Bills</span>
+                                <span class="balance-stat-value">@balanceSummary.OpenBills</span>
+                            </div>
+                            @if (balanceSummary.OverdueBills > 0)
+                            {
+                                <div class="balance-stat-row">
+                                    <span class="balance-stat-label">Overdue Bills</span>
+                                    <span class="balance-stat-value text-danger">@balanceSummary.OverdueBills</span>
+                                </div>
+                            }
+                        </div>
+                        
+                        @if (balanceSummary.LastPaymentDate.HasValue)
+                        {
+                            <div class="last-payment">
+                                <span class="last-payment-label">Last Payment</span>
+                                <div class="last-payment-info">
+                                    <span class="last-payment-amount">@balanceSummary.LastPaymentAmount.ToString("C2")</span>
+                                    <span class="last-payment-date">on @balanceSummary.LastPaymentDate.Value.ToString("MMM d, yyyy")</span>
+                                </div>
+                            </div>
+                        }
+                        
+                        <div class="financial-details mt-4">
+                            <div class="financial-row">
+                                <span class="financial-label">Payment Terms</span>
+                                <span class="financial-value">@viewingVendor.PaymentTerms</span>
+                            </div>
+                            @if (!string.IsNullOrEmpty(viewingVendor.AccountNumber))
+                            {
+                                <div class="financial-row">
+                                    <span class="financial-label">Your Account #</span>
+                                    <span class="financial-value">@viewingVendor.AccountNumber</span>
+                                </div>
+                            }
+                        </div>
+                    </ChildContent>
+                </Card>
+                
+                <Card Title="Quick Actions" CssClass="mt-4">
+                    <ChildContent>
+                        <div class="quick-actions-vertical">
+                            <button class="btn btn-secondary btn-block" @onclick="EditFromView">
+                                ✏️ Edit Vendor
+                            </button>
+                            <button class="btn btn-secondary btn-block" disabled title="Coming soon">
+                                📃 Enter Bill
+                            </button>
+                            <button class="btn btn-secondary btn-block" disabled title="Coming soon">
+                                💸 Pay Bills
+                            </button>
+                        </div>
+                    </ChildContent>
+                </Card>
+            </div>
+        </div>
+        
+        @* Transaction History Section *@
+        <Card Title="Transaction History" CssClass="mt-4">
+            <ChildContent>
+                @if (vendorTransactions.Any())
+                {
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;"></th>
+                                <th>Transaction</th>
+                                <th>Date</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th class="text-right">Amount</th>
+                                <th class="text-right">Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var txn in vendorTransactions)
+                            {
+                                <tr class="@(txn.IsCredit ? "txn-credit" : "")">
+                                    <td class="txn-icon">@txn.TypeIcon</td>
+                                    <td>
+                                        <div class="txn-number">@txn.TransactionNumber</div>
+                                        <div class="txn-type">@txn.Type</div>
+                                    </td>
+                                    <td>@txn.Date.ToString("MMM d, yyyy")</td>
+                                    <td>
+                                        @if (txn.DueDate.HasValue)
+                                        {
+                                            <span>@txn.DueDate.Value.ToString("MMM d, yyyy")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge @txn.StatusClass">@txn.Status</span>
+                                    </td>
+                                    <td class="text-right font-mono @(txn.IsCredit ? "text-success" : "")">
+                                        @(txn.IsCredit ? "-" : "")@txn.Amount.ToString("C2")
+                                    </td>
+                                    <td class="text-right font-mono @(txn.Balance > 0 ? "text-warning" : "")">
+                                        @if (txn.IsCredit)
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                        else
+                                        {
+                                            @txn.Balance.ToString("C2")
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="empty-state-sm">
+                        <span class="empty-icon">📋</span>
+                        <span class="empty-text">No transactions yet</span>
+                        <span class="empty-hint">Bills and payments will appear here</span>
+                    </div>
+                }
+                
+                <div class="vendor-dates mt-4">
+                    <div class="date-row">
+                        <span class="date-label">Vendor Since</span>
+                        <span class="date-value">@viewingVendor.CreatedAt.ToString("MMM d, yyyy")</span>
+                    </div>
+                    @if (viewingVendor.UpdatedAt.HasValue && viewingVendor.UpdatedAt != viewingVendor.CreatedAt)
+                    {
+                        <div class="date-row">
+                            <span class="date-label">Last Updated</span>
+                            <span class="date-value">@viewingVendor.UpdatedAt.Value.ToString("MMM d, yyyy")</span>
+                        </div>
+                    }
+                </div>
+            </ChildContent>
+        </Card>
+    </div>
 }
 else if (isEditing && editingVendor != null)
 {
@@ -204,6 +497,13 @@ else if (isEditing && editingVendor != null)
         </EditForm>
     </div>
 }
+else if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">
+        <strong>Error:</strong> @errorMessage
+        <button class="btn btn-sm btn-secondary ms-3" @onclick="LoadDataAsync">Retry</button>
+    </div>
+}
 else
 {
     @* Vendor List *@
@@ -262,7 +562,7 @@ else
                     <tbody>
                         @foreach (var vendor in GetFilteredVendors())
                         {
-                            <tr class="@(vendor.IsActive ? "" : "inactive") cursor-pointer" @onclick="() => EditVendor(vendor)">
+                            <tr class="@(vendor.IsActive ? "" : "inactive") cursor-pointer" @onclick="async () => await ViewVendorAsync(vendor)">
                                 <td>
                                     <div class="vendor-avatar">@vendor.Initials</div>
                                 </td>
@@ -408,6 +708,185 @@ else
     .vendor-contact { font-size: var(--text-xs); color: var(--text-muted); }
     
     tr.inactive { opacity: 0.6; }
+    
+    /* Vendor Detail View Styles */
+    .vendor-detail-container { max-width: 1200px; }
+    
+    .vendor-detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: var(--space-6);
+    }
+    
+    .detail-header {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-4);
+        margin-bottom: var(--space-6);
+        padding-bottom: var(--space-4);
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .vendor-avatar-lg {
+        width: 64px;
+        height: 64px;
+        border-radius: var(--radius-full);
+        background: #fef3c7;
+        color: #d97706;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: var(--font-bold);
+        font-size: var(--text-xl);
+        flex-shrink: 0;
+    }
+    
+    .detail-header-info { flex: 1; }
+    .detail-name { margin: 0 0 var(--space-1) 0; font-size: var(--text-xl); font-weight: var(--font-semibold); }
+    .detail-company { color: var(--text-secondary); font-size: var(--text-sm); }
+    .detail-number { color: var(--text-muted); font-size: var(--text-sm); font-family: var(--font-mono); }
+    
+    .detail-section { margin-bottom: var(--space-5); }
+    
+    .detail-section-title {
+        font-size: var(--text-sm);
+        font-weight: var(--font-semibold);
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: var(--space-3);
+        padding-bottom: var(--space-2);
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-3);
+    }
+    
+    .detail-item { display: flex; flex-direction: column; gap: var(--space-1); }
+    .detail-label { font-size: var(--text-xs); color: var(--text-muted); }
+    .detail-value { font-size: var(--text-sm); color: var(--text-primary); }
+    .detail-address { font-size: var(--text-sm); color: var(--text-primary); line-height: 1.6; }
+    
+    .detail-notes {
+        font-size: var(--text-sm);
+        color: var(--text-secondary);
+        white-space: pre-wrap;
+        background: var(--bg-secondary);
+        padding: var(--space-3);
+        border-radius: var(--radius-md);
+    }
+    
+    .financial-stat.primary {
+        text-align: center;
+        padding: var(--space-4);
+        background: var(--bg-secondary);
+        border-radius: var(--radius-md);
+        margin-bottom: var(--space-4);
+    }
+    
+    .financial-stat .financial-label { display: block; font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: var(--space-1); }
+    .financial-stat .financial-value { font-size: var(--text-2xl); font-weight: var(--font-bold); font-family: var(--font-mono); }
+    
+    .financial-details { display: flex; flex-direction: column; gap: var(--space-2); }
+    
+    .financial-row {
+        display: flex;
+        justify-content: space-between;
+        padding: var(--space-2) 0;
+        border-bottom: 1px solid var(--border-color);
+        font-size: var(--text-sm);
+    }
+    
+    .financial-row:last-child { border-bottom: none; }
+    .financial-row .financial-label { color: var(--text-secondary); }
+    .financial-row .financial-value { font-weight: var(--font-medium); }
+    
+    .overdue-warning {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-3);
+        background: var(--danger-light);
+        border: 1px solid var(--danger-color);
+        border-radius: var(--radius-md);
+        margin-bottom: var(--space-4);
+    }
+    
+    .overdue-icon { font-size: var(--text-lg); }
+    .overdue-info { display: flex; flex-direction: column; }
+    .overdue-label { font-size: var(--text-xs); color: var(--danger-color); font-weight: var(--font-semibold); }
+    .overdue-value { font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--danger-color); }
+    
+    .balance-stats { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-4); }
+    
+    .balance-stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--space-2);
+        background: var(--bg-secondary);
+        border-radius: var(--radius-sm);
+        font-size: var(--text-sm);
+    }
+    
+    .balance-stat-label { color: var(--text-secondary); }
+    .balance-stat-value { font-weight: var(--font-medium); font-family: var(--font-mono); }
+    
+    .last-payment {
+        padding: var(--space-3);
+        background: var(--success-light);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--success-color);
+    }
+    
+    .last-payment-label { font-size: var(--text-xs); color: var(--success-dark); display: block; margin-bottom: var(--space-1); }
+    .last-payment-info { display: flex; align-items: baseline; gap: var(--space-2); }
+    .last-payment-amount { font-weight: var(--font-bold); color: var(--success-color); }
+    .last-payment-date { font-size: var(--text-sm); color: var(--text-muted); }
+    
+    .quick-actions-vertical { display: flex; flex-direction: column; gap: var(--space-2); }
+    .btn-block { width: 100%; justify-content: center; }
+    
+    .txn-icon { font-size: var(--text-lg); text-align: center; }
+    .txn-number { font-weight: var(--font-medium); font-family: var(--font-mono); font-size: var(--text-sm); }
+    .txn-type { font-size: var(--text-xs); color: var(--text-muted); }
+    .txn-credit { background: var(--success-light); }
+    
+    .empty-state-sm {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-6);
+        color: var(--text-muted);
+        text-align: center;
+    }
+    
+    .empty-icon { font-size: var(--text-3xl); opacity: 0.5; }
+    .empty-text { font-weight: var(--font-medium); }
+    .empty-hint { font-size: var(--text-sm); }
+    
+    .vendor-dates {
+        margin-top: var(--space-4);
+        padding-top: var(--space-4);
+        border-top: 1px solid var(--border-color);
+    }
+    
+    .date-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: var(--text-xs);
+        color: var(--text-muted);
+        padding: var(--space-1) 0;
+    }
+    
+    @@media (max-width: 900px) {
+        .vendor-detail-grid { grid-template-columns: 1fr; }
+        .detail-grid { grid-template-columns: 1fr; }
+    }
 </style>
 
 @code {
@@ -417,8 +896,12 @@ else
     private List<Vendor> vendors = new();
     private List<Account> expenseAccounts = new();
     private Vendor? editingVendor;
+    private Vendor? viewingVendor;
+    private List<VendorTransactionItem> vendorTransactions = new();
+    private VendorBalanceSummary balanceSummary = new();
     private bool isLoading = true;
     private bool isEditing = false;
+    private bool isViewing = false;
     private bool isSaving = false;
     private string searchTerm = "";
     private bool showInactive = false;
@@ -438,7 +921,7 @@ else
             var vendor = vendors.FirstOrDefault(v => v.Id == VendorId.Value);
             if (vendor != null)
             {
-                EditVendor(vendor);
+                await ViewVendorAsync(vendor);
             }
         }
     }
@@ -446,10 +929,15 @@ else
     private async Task LoadDataAsync()
     {
         isLoading = true;
+        errorMessage = null;
         try
         {
             vendors = (await VendorService.GetAllAsync()).ToList();
             expenseAccounts = (await AccountService.GetAccountsByTypeAsync(AccountType.Expense)).ToList();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading data: {ex.Message}";
         }
         finally
         {
@@ -492,7 +980,38 @@ else
             Country = "USA"
         };
         isEditing = true;
+        isViewing = false;
+        viewingVendor = null;
         errorMessage = null;
+    }
+
+    private async Task ViewVendorAsync(Vendor vendor)
+    {
+        viewingVendor = vendor;
+        isViewing = true;
+        isEditing = false;
+        editingVendor = null;
+        
+        // Load transaction history and balance summary
+        vendorTransactions = (await VendorService.GetVendorTransactionsAsync(vendor.Id)).ToList();
+        balanceSummary = await VendorService.GetVendorBalanceSummaryAsync(vendor.Id);
+    }
+
+    private void EditFromView()
+    {
+        if (viewingVendor != null)
+        {
+            EditVendor(viewingVendor);
+        }
+    }
+
+    private void BackToList()
+    {
+        isViewing = false;
+        isEditing = false;
+        viewingVendor = null;
+        editingVendor = null;
+        Navigation.NavigateTo("/vendors");
     }
 
     private void EditVendor(Vendor vendor)
@@ -529,15 +1048,27 @@ else
             Notes = vendor.Notes
         };
         isEditing = true;
+        isViewing = false;
         errorMessage = null;
     }
 
     private void CancelEdit()
     {
-        isEditing = false;
-        editingVendor = null;
-        errorMessage = null;
-        Navigation.NavigateTo("/vendors");
+        if (viewingVendor != null)
+        {
+            // Go back to viewing if we were editing from view
+            isEditing = false;
+            editingVendor = null;
+            errorMessage = null;
+            isViewing = true;
+        }
+        else
+        {
+            isEditing = false;
+            editingVendor = null;
+            errorMessage = null;
+            Navigation.NavigateTo("/vendors");
+        }
     }
 
     private async Task SaveVendorAsync()
@@ -553,16 +1084,31 @@ else
                 ? "Due on Receipt" 
                 : $"Net {editingVendor.PaymentTermsDays}";
             
+            var savedVendorId = editingVendor.Id;
+            
             if (editingVendor.Id > 0)
             {
                 await VendorService.UpdateAsync(editingVendor);
             }
             else
             {
-                await VendorService.CreateAsync(editingVendor);
+                var created = await VendorService.CreateAsync(editingVendor);
+                savedVendorId = created.Id;
             }
             
             await LoadVendorsAsync();
+            
+            // If we were editing from view, go back to viewing the updated vendor
+            if (viewingVendor != null)
+            {
+                var updatedVendor = vendors.FirstOrDefault(v => v.Id == savedVendorId);
+                if (updatedVendor != null)
+                {
+                    await ViewVendorAsync(updatedVendor);
+                    return;
+                }
+            }
+            
             CancelEdit();
         }
         catch (Exception ex)
@@ -579,6 +1125,8 @@ else
     {
         if (isEditing)
             return editingVendor?.Id > 0 ? "Edit Vendor" : "New Vendor";
+        if (isViewing && viewingVendor != null)
+            return viewingVendor.FullName;
         return "Vendors";
     }
 
@@ -586,6 +1134,8 @@ else
     {
         if (isEditing)
             return editingVendor?.Id > 0 ? $"Editing {editingVendor.Name}" : "Add a new vendor";
+        if (isViewing && viewingVendor != null)
+            return viewingVendor.VendorNumber;
         return "Manage your vendors and suppliers";
     }
 }

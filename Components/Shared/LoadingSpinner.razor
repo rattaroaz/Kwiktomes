@@ -2,9 +2,9 @@
 
 <div class="loading-spinner @(IsVisible ? "" : "d-none")">
     <div class="spinner"></div>
-    @if (!string.IsNullOrEmpty(Message))
+    @if (!string.IsNullOrEmpty(Text))
     {
-        <p class="loading-message">@Message</p>
+        <p class="loading-message">@Text</p>
     }
 </div>
 
@@ -13,5 +13,5 @@
     public bool IsVisible { get; set; } = true;
 
     [Parameter]
-    public string? Message { get; set; }
+    public string? Text { get; set; }
 }

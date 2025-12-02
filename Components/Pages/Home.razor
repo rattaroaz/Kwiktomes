@@ -8,6 +8,13 @@
 {
     <LoadingSpinner Text="Loading dashboard..." />
 }
+else if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">
+        <strong>Error loading dashboard:</strong> @errorMessage
+        <button class="btn btn-sm btn-secondary ms-3" @onclick="RetryLoad">Retry</button>
+    </div>
+}
 else if (data != null)
 {
     @* Key Metrics Row *@
@@ -754,18 +761,36 @@ else if (data != null)
     private DashboardData? data;
     private Company? company;
     private bool isLoading = true;
+    private string? errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        
         try
         {
             company = await CompanyService.GetCompanyAsync();
             data = await DashboardService.GetDashboardDataAsync();
         }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
         finally
         {
             isLoading = false;
         }
+    }
+
+    private async Task RetryLoad()
+    {
+        await LoadDataAsync();
     }
 
     private string GetGreeting()

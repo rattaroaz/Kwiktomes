@@ -158,6 +158,13 @@ else if (isEditing && editingEntry != null)
         </div>
     </div>
 }
+else if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">
+        <strong>Error:</strong> @errorMessage
+        <button class="btn btn-sm btn-secondary ms-3" @onclick="LoadDataAsync">Retry</button>
+    </div>
+}
 else
 {
     @* Journal Entries List *@
@@ -393,10 +400,15 @@ else
     private async Task LoadDataAsync()
     {
         isLoading = true;
+        errorMessage = null;
         try
         {
             entries = (await JournalEntryService.GetByDateRangeAsync(startDate, endDate)).ToList();
             accounts = (await AccountService.GetActiveAccountsAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading data: {ex.Message}";
         }
         finally
         {

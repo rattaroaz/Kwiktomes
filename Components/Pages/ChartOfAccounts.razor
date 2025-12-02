@@ -13,6 +13,13 @@
 {
     <LoadingSpinner Text="Loading accounts..." />
 }
+else if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">
+        <strong>Error:</strong> @errorMessage
+        <button class="btn btn-sm btn-secondary ms-3" @onclick="LoadAccountsAsync">Retry</button>
+    </div>
+}
 else
 {
     <div class="accounts-toolbar">
@@ -394,9 +401,14 @@ else
     private async Task LoadAccountsAsync()
     {
         isLoading = true;
+        errorMessage = null;
         try
         {
             accounts = (await AccountService.GetAllAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading accounts: {ex.Message}";
         }
         finally
         {

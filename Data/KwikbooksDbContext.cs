@@ -30,6 +30,10 @@ public class KwikbooksDbContext : DbContext
     public DbSet<BillLine> BillLines => Set<BillLine>();
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<PaymentApplication> PaymentApplications => Set<PaymentApplication>();
+    
+    // Banking entities
+    public DbSet<BankAccount> BankAccounts => Set<BankAccount>();
+    public DbSet<BankTransaction> BankTransactions => Set<BankTransaction>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -215,6 +219,42 @@ public class KwikbooksDbContext : DbContext
             entity.HasOne(pa => pa.Bill)
                   .WithMany(b => b.PaymentApplications)
                   .HasForeignKey(pa => pa.BillId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // BankTransaction configuration
+        modelBuilder.Entity<BankTransaction>(entity =>
+        {
+            entity.HasIndex(t => t.TransactionDate);
+            entity.HasOne(t => t.BankAccount)
+                  .WithMany(a => a.Transactions)
+                  .HasForeignKey(t => t.BankAccountId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(t => t.TransferAccount)
+                  .WithMany()
+                  .HasForeignKey(t => t.TransferAccountId)
+                  .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(t => t.CategoryAccount)
+                  .WithMany()
+                  .HasForeignKey(t => t.CategoryAccountId)
+                  .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(t => t.Vendor)
+                  .WithMany()
+                  .HasForeignKey(t => t.VendorId)
+                  .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(t => t.Customer)
+                  .WithMany()
+                  .HasForeignKey(t => t.CustomerId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // BankAccount configuration
+        modelBuilder.Entity<BankAccount>(entity =>
+        {
+            entity.HasIndex(a => a.Name);
+            entity.HasOne(a => a.LinkedAccount)
+                  .WithMany()
+                  .HasForeignKey(a => a.LinkedAccountId)
                   .OnDelete(DeleteBehavior.SetNull);
         });
 
