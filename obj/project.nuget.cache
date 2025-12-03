@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "j5fd8VBqZiU=",
+  "dgSpecHash": "IzAGfAmshUk=",
   "success": true,
-  "projectFilePath": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\Kwikbooks.csproj",
+  "projectFilePath": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwiktomes\\Kwiktomes.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\kimri\\.nuget\\packages\\googlegson\\2.13.1.1\\googlegson.2.13.1.1.nupkg.sha512",
     "C:\\Users\\kimri\\.nuget\\packages\\microsoft.aspnetcore.authorization\\10.0.0\\microsoft.aspnetcore.authorization.10.0.0.nupkg.sha512",

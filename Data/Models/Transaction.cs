@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Kwikbooks.Data.Models;
+namespace Kwiktomes.Data.Models;
 
 /// <summary>
 /// Base class for all financial transactions (invoices, bills, payments, etc.)

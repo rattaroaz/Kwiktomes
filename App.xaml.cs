@@ -1,6 +1,6 @@
-﻿using Kwikbooks.Data;
+﻿using Kwiktomes.Data;
 
-namespace Kwikbooks
+namespace Kwiktomes
 {
     public partial class App : Application
     {
@@ -27,7 +27,7 @@ namespace Kwikbooks
 
         protected override Window CreateWindow(IActivationState? activationState)
         {
-            return new Window(new MainPage()) { Title = "Kwikbooks" };
+            return new Window(new MainPage()) { Title = "Kwiktomes" };
         }
     }
 }

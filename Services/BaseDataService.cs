@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using Kwikbooks.Data;
-using Kwikbooks.Data.Models;
+using Kwiktomes.Data;
+using Kwiktomes.Data.Models;
 
-namespace Kwikbooks.Services;
+namespace Kwiktomes.Services;
 
 /// <summary>
 /// Base implementation of data service providing common CRUD operations.
@@ -10,10 +10,10 @@ namespace Kwikbooks.Services;
 /// <typeparam name="T">The entity type inheriting from BaseEntity</typeparam>
 public abstract class BaseDataService<T> : IDataService<T> where T : BaseEntity
 {
-    protected readonly KwikbooksDbContext _context;
+    protected readonly KwiktomesDbContext _context;
     protected readonly DbSet<T> _dbSet;
 
-    protected BaseDataService(KwikbooksDbContext context)
+    protected BaseDataService(KwiktomesDbContext context)
     {
         _context = context;
         _dbSet = context.Set<T>();

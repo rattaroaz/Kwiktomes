@@ -6,6 +6,7 @@ C:\Users\kimri\OneDrive\Desktop\cloned repos\Kwikbooks\Kwikbooks\bin\Debug\net10
 C:\Users\kimri\OneDrive\Desktop\cloned repos\Kwikbooks\Kwikbooks\bin\Debug\net10.0-windows10.0.19041.0\win-x64\wwwroot\Kwikbooks.qlthuwo0im.bundle.scp.css
 C:\Users\kimri\OneDrive\Desktop\cloned repos\Kwikbooks\Kwikbooks\bin\Debug\net10.0-windows10.0.19041.0\win-x64\wwwroot\app.css
 C:\Users\kimri\OneDrive\Desktop\cloned repos\Kwikbooks\Kwikbooks\bin\Debug\net10.0-windows10.0.19041.0\win-x64\wwwroot\index.html
+C:\Users\kimri\OneDrive\Desktop\cloned repos\Kwikbooks\Kwikbooks\bin\Debug\net10.0-windows10.0.19041.0\win-x64\wwwroot\js\app.js
 C:\Users\kimri\OneDrive\Desktop\cloned repos\Kwikbooks\Kwikbooks\bin\Debug\net10.0-windows10.0.19041.0\win-x64\splashSplashScreen.scale-100.png
 C:\Users\kimri\OneDrive\Desktop\cloned repos\Kwikbooks\Kwikbooks\bin\Debug\net10.0-windows10.0.19041.0\win-x64\splashSplashScreen.scale-125.png
 C:\Users\kimri\OneDrive\Desktop\cloned repos\Kwikbooks\Kwikbooks\bin\Debug\net10.0-windows10.0.19041.0\win-x64\splashSplashScreen.scale-150.png
@@ -597,4 +598,3 @@ C:\Users\kimri\OneDrive\Desktop\cloned repos\Kwikbooks\Kwikbooks\obj\Debug\net10
 C:\Users\kimri\OneDrive\Desktop\cloned repos\Kwikbooks\Kwikbooks\obj\Debug\net10.0-windows10.0.19041.0\win-x64\qualifiers.txt
 C:\Users\kimri\OneDrive\Desktop\cloned repos\Kwikbooks\Kwikbooks\obj\Debug\net10.0-windows10.0.19041.0\win-x64\qualifiers.txt.intermediate
 C:\Users\kimri\OneDrive\Desktop\cloned repos\Kwikbooks\Kwikbooks\obj\Debug\net10.0-windows10.0.19041.0\win-x64\MultipleQualifiersPerDimensionFound.txt
-C:\Users\kimri\OneDrive\Desktop\cloned repos\Kwikbooks\Kwikbooks\bin\Debug\net10.0-windows10.0.19041.0\win-x64\wwwroot\js\app.js

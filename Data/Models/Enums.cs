@@ -1,4 +1,4 @@
-namespace Kwikbooks.Data.Models;
+namespace Kwiktomes.Data.Models;
 
 /// <summary>
 /// Types of accounts in the chart of accounts.

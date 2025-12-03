@@ -1,6 +1,6 @@
 ﻿@inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Forms
-@using Kwikbooks.Services
+@using Kwiktomes.Services
 @inject IJSRuntime JS
 @inject IImportService ImportService
 
@@ -11,7 +11,7 @@
         <header class="top-bar">
             <div class="top-bar-left">
                 <div class="search-container">
-                    <span class="search-icon">🔍</span>
+                    <span class="search-icon">??</span>
                     <input type="text" class="search-input" placeholder="Search transactions, customers, vendors..." />
                 </div>
             </div>
@@ -19,15 +19,6 @@
                 <button class="top-bar-btn" title="Import QuickBooks Data" @onclick="OpenImportModal">
                     <span>+ New</span>
                 </button>
-                <button class="top-bar-icon-btn" title="Notifications">
-                    <span>🔔</span>
-                </button>
-                <button class="top-bar-icon-btn" title="Help">
-                    <span>❓</span>
-                </button>
-                <div class="user-menu">
-                    <span class="user-avatar">👤</span>
-                </div>
             </div>
         </header>
         
@@ -43,8 +34,8 @@
     <div class="import-modal-backdrop" @onclick="CloseImportModal">
         <div class="import-modal-content" @onclick:stopPropagation="true">
             <div class="import-modal-header">
-                <h3>📥 Import QuickBooks Data</h3>
-                <button class="import-modal-close" @onclick="CloseImportModal">×</button>
+                <h3>?? Import QuickBooks Data</h3>
+                <button class="import-modal-close" @onclick="CloseImportModal">�</button>
             </div>
             <div class="import-modal-body">
                 @if (string.IsNullOrEmpty(importMessage))
@@ -77,7 +68,7 @@
                          @ondragover:preventDefault="true">
                         <InputFile OnChange="HandleFileSelected" accept=".csv,.iif,.CSV,.IIF" class="file-input" />
                         <div class="file-upload-content">
-                            <span class="upload-icon">📁</span>
+                            <span class="upload-icon">??</span>
                             <p class="upload-text">
                                 @if (selectedFile != null)
                                 {
@@ -95,7 +86,7 @@
                 else
                 {
                     <div class="import-result @(importSuccess ? "success" : "error")">
-                        <span class="result-icon">@(importSuccess ? "✅" : "❌")</span>
+                        <span class="result-icon">@(importSuccess ? "?" : "?")</span>
                         <p>@importMessage</p>
                         @if (importDetails.Any())
                         {

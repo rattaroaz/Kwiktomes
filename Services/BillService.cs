@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using Kwikbooks.Data;
-using Kwikbooks.Data.Models;
+using Kwiktomes.Data;
+using Kwiktomes.Data.Models;
 
-namespace Kwikbooks.Services;
+namespace Kwiktomes.Services;
 
 /// <summary>
 /// Service for managing bills and expenses.
@@ -105,7 +105,7 @@ public class BillSummary
 /// </summary>
 public class BillService : BaseDataService<Bill>, IBillService
 {
-    public BillService(KwikbooksDbContext context) : base(context)
+    public BillService(KwiktomesDbContext context) : base(context)
     {
     }
 

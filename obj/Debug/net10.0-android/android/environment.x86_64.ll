@@ -4458,7 +4458,7 @@ target triple = "x86_64-unknown-linux-android21"
 @.env.var.5 = private unnamed_addr constant [42 x i8] c"Xamarin.Android.Net.AndroidMessageHandler\00", align 16
 
 ;ApplicationConfig
-@.ApplicationConfig.0_android_package_name = private unnamed_addr constant [26 x i8] c"com.companyname.kwikbooks\00", align 16
+@.ApplicationConfig.0_android_package_name = private unnamed_addr constant [26 x i8] c"com.companyname.kwiktomes\00", align 16
 
 ;DSOCacheEntry
 @.DSOCacheEntry.0_name = private unnamed_addr constant [16 x i8] c"libe_sqlite3.so\00", align 16

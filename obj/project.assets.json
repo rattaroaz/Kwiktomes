@@ -44536,11 +44536,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\Kwikbooks.csproj",
-      "projectName": "Kwikbooks",
-      "projectPath": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\Kwikbooks.csproj",
+      "projectUniqueName": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwiktomes\\Kwiktomes.csproj",
+      "projectName": "Kwiktomes",
+      "projectPath": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwiktomes\\Kwiktomes.csproj",
       "packagesPath": "C:\\Users\\kimri\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\obj\\",
+      "outputPath": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwiktomes\\obj\\",
       "projectStyle": "PackageReference",
       "crossTargeting": true,
       "fallbackFolders": [

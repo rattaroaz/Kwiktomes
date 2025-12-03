@@ -1,4 +1,4 @@
-namespace Kwikbooks.Data.Models;
+namespace Kwiktomes.Data.Models;
 
 /// <summary>
 /// Base entity class for all database models.

@@ -195,7 +195,7 @@ else
                 <div class="form-group">
                     <label class="form-label form-label-required">Account Type</label>
                     <InputSelect @bind-Value="editingAccount!.AccountType" class="form-control"
-                                 disabled="@(editingAccount.Id > 0)">
+                                 disabled="@(editingAccount!.Id > 0)">
                         @foreach (var type in Enum.GetValues<AccountType>())
                         {
                             <option value="@type">@type</option>

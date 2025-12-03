@@ -1,11 +1,11 @@
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using Kwikbooks.Data;
-using Kwikbooks.Data.Models;
+using Kwiktomes.Data;
+using Kwiktomes.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace Kwikbooks.Services;
+namespace Kwiktomes.Services;
 
 /// <summary>
 /// Service for importing data from QuickBooks export files (CSV and IIF formats).
@@ -38,9 +38,9 @@ public class QBImportResult
 
 public class ImportService : IImportService
 {
-    private readonly KwikbooksDbContext _context;
+    private readonly KwiktomesDbContext _context;
 
-    public ImportService(KwikbooksDbContext context)
+    public ImportService(KwiktomesDbContext context)
     {
         _context = context;
     }

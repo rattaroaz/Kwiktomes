@@ -1,4 +1,4 @@
-namespace Kwikbooks.Data.Models;
+namespace Kwiktomes.Data.Models;
 
 /// <summary>
 /// Represents a journal entry - the fundamental unit of double-entry accounting.

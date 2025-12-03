@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using Kwikbooks.Data;
-using Kwikbooks.Data.Models;
+using Kwiktomes.Data;
+using Kwiktomes.Data.Models;
 
-namespace Kwikbooks.Services;
+namespace Kwiktomes.Services;
 
 /// <summary>
 /// Service for managing the Chart of Accounts.
@@ -65,7 +65,7 @@ public interface IAccountService : IDataService<Account>
 /// </summary>
 public class AccountService : BaseDataService<Account>, IAccountService
 {
-    public AccountService(KwikbooksDbContext context) : base(context)
+    public AccountService(KwiktomesDbContext context) : base(context)
     {
     }
 

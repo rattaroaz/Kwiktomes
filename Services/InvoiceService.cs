@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using Kwikbooks.Data;
-using Kwikbooks.Data.Models;
+using Kwiktomes.Data;
+using Kwiktomes.Data.Models;
 
-namespace Kwikbooks.Services;
+namespace Kwiktomes.Services;
 
 /// <summary>
 /// Service for managing invoices.
@@ -105,7 +105,7 @@ public class InvoiceSummary
 /// </summary>
 public class InvoiceService : BaseDataService<Invoice>, IInvoiceService
 {
-    public InvoiceService(KwikbooksDbContext context) : base(context)
+    public InvoiceService(KwiktomesDbContext context) : base(context)
     {
     }
 

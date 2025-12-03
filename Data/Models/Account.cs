@@ -1,4 +1,4 @@
-namespace Kwikbooks.Data.Models;
+namespace Kwiktomes.Data.Models;
 
 /// <summary>
 /// Represents an account in the chart of accounts.

@@ -1,10 +1,10 @@
 using System.IO.Compression;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using Kwikbooks.Data;
-using Kwikbooks.Data.Models;
+using Kwiktomes.Data;
+using Kwiktomes.Data.Models;
 
-namespace Kwikbooks.Services;
+namespace Kwiktomes.Services;
 
 /// <summary>
 /// Service for managing data backup and restore operations.
@@ -42,15 +42,15 @@ public interface IBackupService
 /// </summary>
 public class BackupService : IBackupService
 {
-    private readonly KwikbooksDbContext _context;
+    private readonly KwiktomesDbContext _context;
     private readonly string _backupFolder;
 
-    public BackupService(KwikbooksDbContext context)
+    public BackupService(KwiktomesDbContext context)
     {
         _context = context;
         _backupFolder = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Kwikbooks",
+            "Kwiktomes",
             "Backups"
         );
         Directory.CreateDirectory(_backupFolder);
@@ -96,7 +96,7 @@ public class BackupService : IBackupService
             }
 
             var backupData = memoryStream.ToArray();
-            var fileName = $"kwikbooks_backup_{DateTime.Now:yyyyMMdd_HHmmss}.zip";
+            var fileName = $"Kwiktomes_backup_{DateTime.Now:yyyyMMdd_HHmmss}.zip";
             
             // Save to backup folder
             var filePath = Path.Combine(_backupFolder, fileName);
@@ -201,7 +201,7 @@ public class BackupService : IBackupService
 
         await Task.Run(() =>
         {
-            var files = Directory.GetFiles(_backupFolder, "kwikbooks_backup_*.zip")
+            var files = Directory.GetFiles(_backupFolder, "Kwiktomes_backup_*.zip")
                 .OrderByDescending(f => f);
 
             foreach (var file in files)

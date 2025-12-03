@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using Kwikbooks.Data;
-using Kwikbooks.Data.Models;
+using Kwiktomes.Data;
+using Kwiktomes.Data.Models;
 
-namespace Kwikbooks.Services;
+namespace Kwiktomes.Services;
 
 /// <summary>
 /// Service for managing products and services.
@@ -75,7 +75,7 @@ public interface IProductService : IDataService<Product>
 /// </summary>
 public class ProductService : BaseDataService<Product>, IProductService
 {
-    public ProductService(KwikbooksDbContext context) : base(context)
+    public ProductService(KwiktomesDbContext context) : base(context)
     {
     }
 

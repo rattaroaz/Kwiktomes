@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
-using Kwikbooks.Data;
-using Kwikbooks.Extensions;
+using Kwiktomes.Data;
+using Kwiktomes.Extensions;
 
-namespace Kwikbooks
+namespace Kwiktomes
 {
     public static class MauiProgram
     {
@@ -20,8 +20,8 @@ namespace Kwikbooks
             builder.Services.AddMauiBlazorWebView();
 
             // Configure dependency injection
-            builder.Services.AddKwikbooksDatabase();
-            builder.Services.AddKwikbooksServices();
+            builder.Services.AddKwiktomesDatabase();
+            builder.Services.AddKwiktomesServices();
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();

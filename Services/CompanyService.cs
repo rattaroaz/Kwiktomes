@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using Kwikbooks.Data;
-using Kwikbooks.Data.Models;
+using Kwiktomes.Data;
+using Kwiktomes.Data.Models;
 
-namespace Kwikbooks.Services;
+namespace Kwiktomes.Services;
 
 /// <summary>
 /// Service for managing the company profile.
@@ -57,10 +57,10 @@ public interface ICompanyService
 /// </summary>
 public class CompanyService : ICompanyService
 {
-    private readonly KwikbooksDbContext _context;
+    private readonly KwiktomesDbContext _context;
     private Company? _cachedCompany;
 
-    public CompanyService(KwikbooksDbContext context)
+    public CompanyService(KwiktomesDbContext context)
     {
         _context = context;
     }

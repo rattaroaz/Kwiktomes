@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using Kwikbooks.Data;
-using Kwikbooks.Data.Models;
+using Kwiktomes.Data;
+using Kwiktomes.Data.Models;
 
-namespace Kwikbooks.Services;
+namespace Kwiktomes.Services;
 
 /// <summary>
 /// Service for generating financial reports.
@@ -419,9 +419,9 @@ public class StatementTransaction
 /// </summary>
 public class ReportService : IReportService
 {
-    private readonly KwikbooksDbContext _context;
+    private readonly KwiktomesDbContext _context;
 
-    public ReportService(KwikbooksDbContext context)
+    public ReportService(KwiktomesDbContext context)
     {
         _context = context;
     }

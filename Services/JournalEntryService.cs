@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using Kwikbooks.Data;
-using Kwikbooks.Data.Models;
+using Kwiktomes.Data;
+using Kwiktomes.Data.Models;
 
-namespace Kwikbooks.Services;
+namespace Kwiktomes.Services;
 
 /// <summary>
 /// Service for managing journal entries.
@@ -104,7 +104,7 @@ public class JournalEntryService : BaseDataService<JournalEntry>, IJournalEntryS
 {
     private readonly IAccountService _accountService;
 
-    public JournalEntryService(KwikbooksDbContext context, IAccountService accountService) 
+    public JournalEntryService(KwiktomesDbContext context, IAccountService accountService) 
         : base(context)
     {
         _accountService = accountService;

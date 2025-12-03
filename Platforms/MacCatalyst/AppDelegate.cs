@@ -1,6 +1,6 @@
 ﻿using Foundation;
 
-namespace Kwikbooks
+namespace Kwiktomes
 {
     [Register("AppDelegate")]
     public class AppDelegate : MauiUIApplicationDelegate

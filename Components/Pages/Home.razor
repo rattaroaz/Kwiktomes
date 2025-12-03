@@ -1,4 +1,4 @@
-﻿@page "/"
+@page "/"
 @inject IDashboardService DashboardService
 @inject ICompanyService CompanyService
 
@@ -22,11 +22,10 @@ else if (data != null)
         <div class="stat-widget revenue">
             <div class="stat-widget-header">
                 <span class="stat-widget-title">Total Revenue</span>
-                <span class="stat-widget-icon">💰</span>
             </div>
             <div class="stat-widget-value">@data.TotalRevenue.ToString("C0")</div>
             <div class="stat-widget-change @(data.RevenueChange >= 0 ? "positive" : "negative")">
-                <span>@(data.RevenueChange >= 0 ? "↑" : "↓") @Math.Abs(data.RevenueChange).ToString("N1")%</span>
+                <span>@(data.RevenueChange >= 0 ? "?" : "?") @Math.Abs(data.RevenueChange).ToString("N1")%</span>
                 <span>vs last month</span>
             </div>
         </div>
@@ -34,11 +33,10 @@ else if (data != null)
         <div class="stat-widget expenses">
             <div class="stat-widget-header">
                 <span class="stat-widget-title">Total Expenses</span>
-                <span class="stat-widget-icon">📉</span>
             </div>
             <div class="stat-widget-value">@data.TotalExpenses.ToString("C0")</div>
             <div class="stat-widget-change @(data.ExpenseChange <= 0 ? "positive" : "negative")">
-                <span>@(data.ExpenseChange >= 0 ? "↑" : "↓") @Math.Abs(data.ExpenseChange).ToString("N1")%</span>
+                <span>@(data.ExpenseChange >= 0 ? "?" : "?") @Math.Abs(data.ExpenseChange).ToString("N1")%</span>
                 <span>vs last month</span>
             </div>
         </div>
@@ -46,7 +44,6 @@ else if (data != null)
         <div class="stat-widget profit @(data.NetProfit >= 0 ? "positive-bg" : "negative-bg")">
             <div class="stat-widget-header">
                 <span class="stat-widget-title">Net Profit</span>
-                <span class="stat-widget-icon">📊</span>
             </div>
             <div class="stat-widget-value">@data.NetProfit.ToString("C0")</div>
             <div class="stat-widget-change">
@@ -57,7 +54,6 @@ else if (data != null)
         <div class="stat-widget cash">
             <div class="stat-widget-header">
                 <span class="stat-widget-title">Cash & Bank</span>
-                <span class="stat-widget-icon">🏦</span>
             </div>
             <div class="stat-widget-value">@data.TotalCashAndBank.ToString("C0")</div>
             <div class="stat-widget-change">
@@ -84,7 +80,7 @@ else if (data != null)
                         @if (data.OverdueInvoiceCount > 0)
                         {
                             <div class="summary-row warning">
-                                <span class="summary-label">⚠️ Overdue</span>
+                                <span class="summary-label">?? Overdue</span>
                                 <span class="summary-value">@data.OverdueInvoiceCount (@data.OverdueAmount.ToString("C0"))</span>
                             </div>
                         }
@@ -148,7 +144,7 @@ else if (data != null)
                         @if (data.OverdueBillCount > 0)
                         {
                             <div class="summary-row warning">
-                                <span class="summary-label">⚠️ Overdue</span>
+                                <span class="summary-label">?? Overdue</span>
                                 <span class="summary-value">@data.OverdueBillCount (@data.OverduePayablesAmount.ToString("C0"))</span>
                             </div>
                         }
@@ -191,22 +187,22 @@ else if (data != null)
                 <ChildContent>
                     <div class="snapshot-grid">
                         <a href="/customers" class="snapshot-item">
-                            <span class="snapshot-icon">👥</span>
+                            <span class="snapshot-icon">??</span>
                             <span class="snapshot-value">@data.CustomerCount</span>
                             <span class="snapshot-label">Customers</span>
                         </a>
                         <a href="/vendors" class="snapshot-item">
-                            <span class="snapshot-icon">🏪</span>
+                            <span class="snapshot-icon">??</span>
                             <span class="snapshot-value">@data.VendorCount</span>
                             <span class="snapshot-label">Vendors</span>
                         </a>
                         <a href="/products" class="snapshot-item">
-                            <span class="snapshot-icon">📦</span>
+                            <span class="snapshot-icon">??</span>
                             <span class="snapshot-value">@data.ProductCount</span>
                             <span class="snapshot-label">Products</span>
                         </a>
                         <a href="/products?filter=lowstock" class="snapshot-item @(data.LowStockCount > 0 ? "warning" : "")">
-                            <span class="snapshot-icon">⚠️</span>
+                            <span class="snapshot-icon">??</span>
                             <span class="snapshot-value">@data.LowStockCount</span>
                             <span class="snapshot-label">Low Stock</span>
                         </a>
@@ -342,27 +338,27 @@ else if (data != null)
                 <ChildContent>
                     <div class="quick-actions-grid">
                         <a href="/customers/new" class="quick-action-btn">
-                            <span class="quick-action-icon">👥</span>
+                            <span class="quick-action-icon">??</span>
                             <span class="quick-action-text">New Customer</span>
                         </a>
                         <a href="/vendors/new" class="quick-action-btn">
-                            <span class="quick-action-icon">🏪</span>
+                            <span class="quick-action-icon">??</span>
                             <span class="quick-action-text">New Vendor</span>
                         </a>
                         <a href="/products/new" class="quick-action-btn">
-                            <span class="quick-action-icon">📦</span>
+                            <span class="quick-action-icon">??</span>
                             <span class="quick-action-text">New Product</span>
                         </a>
                         <a href="/journal-entries/new" class="quick-action-btn">
-                            <span class="quick-action-icon">📝</span>
+                            <span class="quick-action-icon">??</span>
                             <span class="quick-action-text">Journal Entry</span>
                         </a>
                         <a href="/chart-of-accounts" class="quick-action-btn">
-                            <span class="quick-action-icon">📊</span>
+                            <span class="quick-action-icon">??</span>
                             <span class="quick-action-text">Chart of Accounts</span>
                         </a>
                         <a href="/settings" class="quick-action-btn">
-                            <span class="quick-action-icon">⚙️</span>
+                            <span class="quick-action-icon">??</span>
                             <span class="quick-action-text">Settings</span>
                         </a>
                     </div>
@@ -397,7 +393,7 @@ else if (data != null)
                     else
                     {
                         <div class="empty-state-sm">
-                            <span class="empty-icon">📋</span>
+                            <span class="empty-icon">??</span>
                             <span>No recent activity</span>
                         </div>
                     }

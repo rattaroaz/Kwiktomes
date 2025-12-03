@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using Kwikbooks.Data;
-using Kwikbooks.Data.Models;
+using Kwiktomes.Data;
+using Kwiktomes.Data.Models;
 
-namespace Kwikbooks.Services;
+namespace Kwiktomes.Services;
 
 /// <summary>
 /// Represents a transaction in vendor history.
@@ -110,7 +110,7 @@ public interface IVendorService : IDataService<Vendor>
 /// </summary>
 public class VendorService : BaseDataService<Vendor>, IVendorService
 {
-    public VendorService(KwikbooksDbContext context) : base(context)
+    public VendorService(KwiktomesDbContext context) : base(context)
     {
     }
 

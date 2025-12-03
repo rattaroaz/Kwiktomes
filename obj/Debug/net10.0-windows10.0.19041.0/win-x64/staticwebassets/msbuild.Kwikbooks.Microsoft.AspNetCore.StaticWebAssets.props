@@ -32,12 +32,12 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>7gozatqung</Fingerprint>
-      <Integrity>h2QYlPGai8ooHxjOA0OdapzA4ImL9/eOeGaLZO/CAIg=</Integrity>
+      <Fingerprint>a67gjr5l26</Fingerprint>
+      <Integrity>rqjd9zKiPjLb/LuHcjH0R7ir7BEQOsTZnizydeihjXE=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>838</FileLength>
-      <LastWriteTime>Tue, 02 Dec 2025 15:07:31 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 03 Dec 2025 04:03:22 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\index.html'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\app.js'))">
@@ -77,7 +77,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <FileLength>54</FileLength>
-      <LastWriteTime>Tue, 02 Dec 2025 05:59:57 GMT</LastWriteTime>
+      <LastWriteTime>Wed, 03 Dec 2025 04:05:20 GMT</LastWriteTime>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\Kwikbooks.styles.css'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\_framework\blazor.modules.json'))">

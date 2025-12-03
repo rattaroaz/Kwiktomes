@@ -1,0 +1,10 @@
+<api type="debug" assembly-name="Kwiktomes" mvid="3c9f70b6d7274439829a2a2c8f17c9a2">
+  <java-to-managed>
+    <entry java-name="crc6467e6b5bd5fa398d7/MainActivity" managed-name="Kwiktomes.MainActivity, Kwiktomes" managed-type-token-id="33554452" />
+    <entry java-name="crc6467e6b5bd5fa398d7/MainApplication" managed-name="Kwiktomes.MainApplication, Kwiktomes" managed-type-token-id="33554453" />
+  </java-to-managed>
+  <managed-to-java>
+    <entry java-name="crc6467e6b5bd5fa398d7/MainActivity" managed-name="Kwiktomes.MainActivity, Kwiktomes" managed-type-token-id="33554452" />
+    <entry java-name="crc6467e6b5bd5fa398d7/MainApplication" managed-name="Kwiktomes.MainApplication, Kwiktomes" managed-type-token-id="33554453" />
+  </managed-to-java>
+</api>

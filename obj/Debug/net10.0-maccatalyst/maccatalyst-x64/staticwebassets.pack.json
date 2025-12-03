@@ -9,40 +9,40 @@
       "PackagePath": "staticwebassets\\_framework\\blazor.webview.js"
     },
     {
-      "Id": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\obj\\Debug\\net10.0-maccatalyst\\maccatalyst-x64\\scopedcss\\bundle\\Kwikbooks.styles.css",
-      "PackagePath": "staticwebassets\\Kwikbooks.styles.css"
+      "Id": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwiktomes\\obj\\Debug\\net10.0-maccatalyst\\maccatalyst-x64\\scopedcss\\bundle\\Kwiktomes.styles.css",
+      "PackagePath": "staticwebassets\\Kwiktomes.styles.css"
     },
     {
-      "Id": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\wwwroot\\app.css",
+      "Id": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwiktomes\\wwwroot\\app.css",
       "PackagePath": "staticwebassets\\app.css"
     },
     {
-      "Id": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\wwwroot\\index.html",
+      "Id": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwiktomes\\wwwroot\\index.html",
       "PackagePath": "staticwebassets\\index.html"
     },
     {
-      "Id": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\wwwroot\\js\\app.js",
+      "Id": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwiktomes\\wwwroot\\js\\app.js",
       "PackagePath": "staticwebassets\\js\\app.js"
     },
     {
-      "Id": "obj\\Debug\\net10.0-maccatalyst\\maccatalyst-x64\\staticwebassets\\msbuild.Kwikbooks.Microsoft.AspNetCore.StaticWebAssetEndpoints.props",
+      "Id": "obj\\Debug\\net10.0-maccatalyst\\maccatalyst-x64\\staticwebassets\\msbuild.Kwiktomes.Microsoft.AspNetCore.StaticWebAssetEndpoints.props",
       "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssetEndpoints.props"
     },
     {
-      "Id": "obj\\Debug\\net10.0-maccatalyst\\maccatalyst-x64\\staticwebassets\\msbuild.Kwikbooks.Microsoft.AspNetCore.StaticWebAssets.props",
+      "Id": "obj\\Debug\\net10.0-maccatalyst\\maccatalyst-x64\\staticwebassets\\msbuild.Kwiktomes.Microsoft.AspNetCore.StaticWebAssets.props",
       "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
     },
     {
-      "Id": "obj\\Debug\\net10.0-maccatalyst\\maccatalyst-x64\\staticwebassets\\msbuild.build.Kwikbooks.props",
-      "PackagePath": "build\\Kwikbooks.props"
+      "Id": "obj\\Debug\\net10.0-maccatalyst\\maccatalyst-x64\\staticwebassets\\msbuild.build.Kwiktomes.props",
+      "PackagePath": "build\\Kwiktomes.props"
     },
     {
-      "Id": "obj\\Debug\\net10.0-maccatalyst\\maccatalyst-x64\\staticwebassets\\msbuild.buildMultiTargeting.Kwikbooks.props",
-      "PackagePath": "buildMultiTargeting\\Kwikbooks.props"
+      "Id": "obj\\Debug\\net10.0-maccatalyst\\maccatalyst-x64\\staticwebassets\\msbuild.buildMultiTargeting.Kwiktomes.props",
+      "PackagePath": "buildMultiTargeting\\Kwiktomes.props"
     },
     {
-      "Id": "obj\\Debug\\net10.0-maccatalyst\\maccatalyst-x64\\staticwebassets\\msbuild.buildTransitive.Kwikbooks.props",
-      "PackagePath": "buildTransitive\\Kwikbooks.props"
+      "Id": "obj\\Debug\\net10.0-maccatalyst\\maccatalyst-x64\\staticwebassets\\msbuild.buildTransitive.Kwiktomes.props",
+      "PackagePath": "buildTransitive\\Kwiktomes.props"
     }
   ],
   "ElementsToRemove": []

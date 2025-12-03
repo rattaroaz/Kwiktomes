@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using Kwikbooks.Data;
-using Kwikbooks.Data.Models;
+using Kwiktomes.Data;
+using Kwiktomes.Data.Models;
 
-namespace Kwikbooks.Services;
+namespace Kwiktomes.Services;
 
 /// <summary>
 /// Represents a transaction in customer history.
@@ -105,7 +105,7 @@ public interface ICustomerService : IDataService<Customer>
 /// </summary>
 public class CustomerService : BaseDataService<Customer>, ICustomerService
 {
-    public CustomerService(KwikbooksDbContext context) : base(context)
+    public CustomerService(KwiktomesDbContext context) : base(context)
     {
     }
 

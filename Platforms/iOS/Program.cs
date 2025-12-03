@@ -1,7 +1,7 @@
 ﻿using ObjCRuntime;
 using UIKit;
 
-namespace Kwikbooks
+namespace Kwiktomes
 {
     public class Program
     {

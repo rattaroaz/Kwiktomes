@@ -1,11 +1,11 @@
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using Kwikbooks.Data.Models;
+using Kwiktomes.Data.Models;
 using PdfColors = QuestPDF.Helpers.Colors;
 using PdfContainer = QuestPDF.Infrastructure.IContainer;
 
-namespace Kwikbooks.Services;
+namespace Kwiktomes.Services;
 
 /// <summary>
 /// Service for generating invoice PDFs.

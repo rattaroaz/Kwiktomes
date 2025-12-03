@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using Kwikbooks.Data;
-using Kwikbooks.Data.Models;
+using Kwiktomes.Data;
+using Kwiktomes.Data.Models;
 
-namespace Kwikbooks.Services;
+namespace Kwiktomes.Services;
 
 /// <summary>
 /// Service for aggregating dashboard data.
@@ -120,7 +120,7 @@ public class PLCategory
 }
 
 /// <summary>
-/// Individual account in P&L category.
+/// Individual account in P&amp;L category.
 /// </summary>
 public class PLAccount
 {
@@ -145,9 +145,9 @@ public class CashFlowItem
 /// </summary>
 public class DashboardService : IDashboardService
 {
-    private readonly KwikbooksDbContext _context;
+    private readonly KwiktomesDbContext _context;
 
-    public DashboardService(KwikbooksDbContext context)
+    public DashboardService(KwiktomesDbContext context)
     {
         _context = context;
     }

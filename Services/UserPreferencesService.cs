@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using Kwikbooks.Data;
-using Kwikbooks.Data.Models;
+using Kwiktomes.Data;
+using Kwiktomes.Data.Models;
 
-namespace Kwikbooks.Services;
+namespace Kwiktomes.Services;
 
 /// <summary>
 /// Service for managing user preferences.
@@ -30,10 +30,10 @@ public interface IUserPreferencesService
 /// </summary>
 public class UserPreferencesService : IUserPreferencesService
 {
-    private readonly KwikbooksDbContext _context;
+    private readonly KwiktomesDbContext _context;
     private UserPreferences? _cachedPreferences;
 
-    public UserPreferencesService(KwikbooksDbContext context)
+    public UserPreferencesService(KwiktomesDbContext context)
     {
         _context = context;
     }

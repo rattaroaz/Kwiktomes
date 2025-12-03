@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using Kwikbooks.Data;
-using Kwikbooks.Services;
+using Kwiktomes.Data;
+using Kwiktomes.Services;
 
-namespace Kwikbooks.Extensions;
+namespace Kwiktomes.Extensions;
 
 /// <summary>
 /// Extension methods for configuring dependency injection.
@@ -10,34 +10,36 @@ namespace Kwikbooks.Extensions;
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Gets the path to the SQLite database file in the Data folder.
+    /// Gets the path to the SQLite database file in the app's local data folder.
+    /// Uses the platform-appropriate location for persistent data storage.
     /// </summary>
     public static string GetDatabasePath()
     {
-        // Get the base directory of the application
-        var baseDir = AppContext.BaseDirectory;
+        // Use the app's local data directory for cross-platform compatibility
+        // This resolves to the appropriate location on each platform:
+        // - Windows: C:\Users\{user}\AppData\Local\{app}
+        // - macOS: ~/Library/Application Support/{app}
+        // - iOS: {app}/Library
+        // - Android: /data/data/{app}/files
+        var dataFolder = FileSystem.AppDataDirectory;
         
-        // Navigate to the project Data folder (for development)
-        // In production, this would be configured differently
-        var dataFolder = Path.Combine(baseDir, "Data");
-        
-        // Ensure the Data directory exists
+        // Ensure the directory exists
         if (!Directory.Exists(dataFolder))
         {
             Directory.CreateDirectory(dataFolder);
         }
         
-        return Path.Combine(dataFolder, "kwikbooks.db");
+        return Path.Combine(dataFolder, "kwiktomes.db");
     }
 
     /// <summary>
     /// Registers the database context with SQLite.
     /// </summary>
-    public static IServiceCollection AddKwikbooksDatabase(this IServiceCollection services)
+    public static IServiceCollection AddKwiktomesDatabase(this IServiceCollection services)
     {
         var dbPath = GetDatabasePath();
         
-        services.AddDbContext<KwikbooksDbContext>(options =>
+        services.AddDbContext<KwiktomesDbContext>(options =>
             options.UseSqlite($"Data Source={dbPath}"));
 
         return services;
@@ -46,7 +48,7 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Registers all application services.
     /// </summary>
-    public static IServiceCollection AddKwikbooksServices(this IServiceCollection services)
+    public static IServiceCollection AddKwiktomesServices(this IServiceCollection services)
     {
         // Company profile service
         services.AddScoped<ICompanyService, CompanyService>();

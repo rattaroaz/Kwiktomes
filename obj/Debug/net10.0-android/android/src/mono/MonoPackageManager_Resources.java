@@ -1,8 +1,8 @@
 package mono;
 public class MonoPackageManager_Resources {
 	public static String[] Assemblies = new String[]{
-		/* We need to ensure that "Kwikbooks.dll" comes first in this list. */
-		"Kwikbooks.dll",
+		/* We need to ensure that "Kwiktomes.dll" comes first in this list. */
+		"Kwiktomes.dll",
 		"GoogleGson.dll",
 		"Microsoft.AspNetCore.Authorization.dll",
 		"Microsoft.AspNetCore.Components.dll",

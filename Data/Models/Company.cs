@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Kwikbooks.Data.Models;
+namespace Kwiktomes.Data.Models;
 
 /// <summary>
 /// Represents the company/business profile.
@@ -129,7 +129,7 @@ public class Company : BaseEntity
     public string? LogoContentType { get; set; }
     
     [MaxLength(7)]
-    public string PrimaryColor { get; set; } = "#2ca01c"; // KwikBooks green
+    public string PrimaryColor { get; set; } = "#2ca01c"; // Kwiktomes green
     
     [MaxLength(7)]
     public string SecondaryColor { get; set; } = "#1a1d21";

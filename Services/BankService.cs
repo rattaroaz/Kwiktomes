@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using Kwikbooks.Data;
-using Kwikbooks.Data.Models;
+using Kwiktomes.Data;
+using Kwiktomes.Data.Models;
 
-namespace Kwikbooks.Services;
+namespace Kwiktomes.Services;
 
 /// <summary>
 /// Service for managing bank accounts and transactions.
@@ -100,9 +100,9 @@ public class ImportedTransaction
 /// </summary>
 public class BankService : IBankService
 {
-    private readonly KwikbooksDbContext _context;
+    private readonly KwiktomesDbContext _context;
 
-    public BankService(KwikbooksDbContext context)
+    public BankService(KwiktomesDbContext context)
     {
         _context = context;
     }

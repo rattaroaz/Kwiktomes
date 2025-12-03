@@ -1,4 +1,4 @@
-﻿namespace Kwikbooks
+﻿namespace Kwiktomes
 {
     public partial class MainPage : ContentPage
     {

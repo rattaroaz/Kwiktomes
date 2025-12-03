@@ -1,4 +1,4 @@
-namespace Kwikbooks.Services;
+namespace Kwiktomes.Services;
 
 /// <summary>
 /// Generic data service interface for CRUD operations.

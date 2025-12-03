@@ -1,7 +1,7 @@
 ﻿using Android.App;
 using Android.Runtime;
 
-namespace Kwikbooks
+namespace Kwiktomes
 {
     [Application]
     public class MainApplication : MauiApplication

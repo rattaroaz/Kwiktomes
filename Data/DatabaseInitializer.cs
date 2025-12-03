@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using Kwikbooks.Services;
+using Kwiktomes.Services;
 
-namespace Kwikbooks.Data;
+namespace Kwiktomes.Data;
 
 /// <summary>
 /// Handles database initialization and migrations.
@@ -17,7 +17,7 @@ public static class DatabaseInitializer
     public static async Task InitializeAsync(IServiceProvider serviceProvider)
     {
         using var scope = serviceProvider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<KwikbooksDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<KwiktomesDbContext>();
         
         // For development: check if we need to recreate the database
         var needsRecreate = await CheckSchemaVersionAsync(context);
@@ -42,7 +42,7 @@ public static class DatabaseInitializer
     /// Checks if the database schema version matches current version.
     /// Returns true if database needs to be recreated.
     /// </summary>
-    private static async Task<bool> CheckSchemaVersionAsync(KwikbooksDbContext context)
+    private static async Task<bool> CheckSchemaVersionAsync(KwiktomesDbContext context)
     {
         try
         {
@@ -81,7 +81,7 @@ public static class DatabaseInitializer
     /// <summary>
     /// Updates the schema version in the database.
     /// </summary>
-    private static async Task UpdateSchemaVersionAsync(KwikbooksDbContext context)
+    private static async Task UpdateSchemaVersionAsync(KwiktomesDbContext context)
     {
         try
         {

@@ -1,15 +1,15 @@
 using Microsoft.EntityFrameworkCore;
-using Kwikbooks.Data.Models;
+using Kwiktomes.Data.Models;
 
-namespace Kwikbooks.Data;
+namespace Kwiktomes.Data;
 
 /// <summary>
-/// Main database context for Kwikbooks.
+/// Main database context for Kwiktomes.
 /// Manages all entity sets and database configuration.
 /// </summary>
-public class KwikbooksDbContext : DbContext
+public class KwiktomesDbContext : DbContext
 {
-    public KwikbooksDbContext(DbContextOptions<KwikbooksDbContext> options) 
+    public KwiktomesDbContext(DbContextOptions<KwiktomesDbContext> options) 
         : base(options)
     {
     }
