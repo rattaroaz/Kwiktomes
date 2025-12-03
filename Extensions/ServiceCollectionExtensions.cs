@@ -89,6 +89,9 @@ public static class ServiceCollectionExtensions
         
         // Backup service
         services.AddScoped<IBackupService, BackupService>();
+        
+        // Import service (QuickBooks file import)
+        services.AddScoped<IImportService, ImportService>();
 
         return services;
     }

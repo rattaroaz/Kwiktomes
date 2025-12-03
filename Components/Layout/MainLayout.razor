@@ -1,4 +1,8 @@
 ﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Forms
+@using Kwikbooks.Services
+@inject IJSRuntime JS
+@inject IImportService ImportService
 
 <div class="app-container">
     <NavMenu />
@@ -12,7 +16,7 @@
                 </div>
             </div>
             <div class="top-bar-right">
-                <button class="top-bar-btn" title="Create New">
+                <button class="top-bar-btn" title="Import QuickBooks Data" @onclick="OpenImportModal">
                     <span>+ New</span>
                 </button>
                 <button class="top-bar-icon-btn" title="Notifications">
@@ -32,3 +36,493 @@
         </main>
     </div>
 </div>
+
+@* Import Modal *@
+@if (showImportModal)
+{
+    <div class="import-modal-backdrop" @onclick="CloseImportModal">
+        <div class="import-modal-content" @onclick:stopPropagation="true">
+            <div class="import-modal-header">
+                <h3>📥 Import QuickBooks Data</h3>
+                <button class="import-modal-close" @onclick="CloseImportModal">×</button>
+            </div>
+            <div class="import-modal-body">
+                @if (string.IsNullOrEmpty(importMessage))
+                {
+                    <div class="import-info">
+                        <p>Import data from QuickBooks export files. Supported formats:</p>
+                        <ul>
+                            <li><strong>CSV</strong> - Comma Separated Values (Chart of Accounts, Customers, Vendors, Products, Transactions)</li>
+                            <li><strong>IIF</strong> - Intuit Interchange Format</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="import-type-selector">
+                        <label class="form-label">What are you importing?</label>
+                        <select class="form-control" @bind="selectedImportType">
+                            <option value="">-- Select Import Type --</option>
+                            <option value="accounts">Chart of Accounts</option>
+                            <option value="customers">Customers</option>
+                            <option value="vendors">Vendors</option>
+                            <option value="products">Products & Services</option>
+                            <option value="invoices">Invoices</option>
+                            <option value="bills">Bills</option>
+                            <option value="transactions">Bank Transactions</option>
+                        </select>
+                    </div>
+                    
+                    <div class="file-upload-area @(isDragOver ? "drag-over" : "")" 
+                         @ondragenter="HandleDragEnter" 
+                         @ondragleave="HandleDragLeave" 
+                         @ondragover:preventDefault="true">
+                        <InputFile OnChange="HandleFileSelected" accept=".csv,.iif,.CSV,.IIF" class="file-input" />
+                        <div class="file-upload-content">
+                            <span class="upload-icon">📁</span>
+                            <p class="upload-text">
+                                @if (selectedFile != null)
+                                {
+                                    <span class="selected-file">@selectedFile.Name (@FormatFileSize(selectedFile.Size))</span>
+                                }
+                                else
+                                {
+                                    <span>Drag & drop your file here, or <strong>click to browse</strong></span>
+                                }
+                            </p>
+                            <p class="upload-hint">Accepts CSV and IIF files up to 10MB</p>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="import-result @(importSuccess ? "success" : "error")">
+                        <span class="result-icon">@(importSuccess ? "✅" : "❌")</span>
+                        <p>@importMessage</p>
+                        @if (importDetails.Any())
+                        {
+                            <ul class="import-details">
+                                @foreach (var detail in importDetails)
+                                {
+                                    <li>@detail</li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                }
+            </div>
+            <div class="import-modal-footer">
+                @if (string.IsNullOrEmpty(importMessage))
+                {
+                    <button class="btn btn-secondary" @onclick="CloseImportModal">Cancel</button>
+                    <button class="btn btn-primary" @onclick="ProcessImport" disabled="@(selectedFile == null || string.IsNullOrEmpty(selectedImportType) || isImporting)">
+                        @if (isImporting)
+                        {
+                            <span>Importing...</span>
+                        }
+                        else
+                        {
+                            <span>Import Data</span>
+                        }
+                    </button>
+                }
+                else
+                {
+                    <button class="btn btn-secondary" @onclick="ResetImport">Import Another</button>
+                    <button class="btn btn-primary" @onclick="CloseImportModal">Done</button>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .import-modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+    
+    .import-modal-content {
+        background: var(--bg-primary, #fff);
+        border-radius: 12px;
+        width: 100%;
+        max-width: 550px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    
+    .import-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border-color, #e5e7eb);
+    }
+    
+    .import-modal-header h3 { 
+        margin: 0; 
+        font-size: 1.25rem;
+        color: var(--text-primary, #1f2937);
+    }
+    
+    .import-modal-close { 
+        background: none; 
+        border: none; 
+        font-size: 1.5rem; 
+        cursor: pointer; 
+        color: var(--text-muted, #6b7280);
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+    
+    .import-modal-close:hover {
+        background: var(--bg-secondary, #f3f4f6);
+    }
+    
+    .import-modal-body { 
+        padding: 24px; 
+    }
+    
+    .import-info {
+        background: var(--bg-secondary, #f8fafc);
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 20px;
+    }
+    
+    .import-info p {
+        margin: 0 0 12px 0;
+        color: var(--text-primary, #1f2937);
+    }
+    
+    .import-info ul {
+        margin: 0;
+        padding-left: 20px;
+    }
+    
+    .import-info li {
+        margin-bottom: 6px;
+        color: var(--text-secondary, #4b5563);
+    }
+    
+    .import-type-selector {
+        margin-bottom: 20px;
+    }
+    
+    .import-type-selector .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: var(--text-primary, #1f2937);
+    }
+    
+    .import-type-selector .form-control {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border-color, #d1d5db);
+        border-radius: 6px;
+        font-size: 0.95rem;
+    }
+    
+    .file-upload-area {
+        position: relative;
+        border: 2px dashed var(--border-color, #d1d5db);
+        border-radius: 12px;
+        padding: 40px 20px;
+        text-align: center;
+        transition: all 0.2s ease;
+        background: var(--bg-secondary, #fafafa);
+    }
+    
+    .file-upload-area:hover,
+    .file-upload-area.drag-over {
+        border-color: var(--primary, #2563eb);
+        background: rgba(37, 99, 235, 0.05);
+    }
+    
+    .file-input {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+    
+    .file-upload-content {
+        pointer-events: none;
+    }
+    
+    .upload-icon {
+        font-size: 3rem;
+        display: block;
+        margin-bottom: 12px;
+    }
+    
+    .upload-text {
+        margin: 0 0 8px 0;
+        color: var(--text-secondary, #4b5563);
+    }
+    
+    .upload-text strong {
+        color: var(--primary, #2563eb);
+    }
+    
+    .selected-file {
+        color: var(--success, #059669);
+        font-weight: 500;
+    }
+    
+    .upload-hint {
+        margin: 0;
+        font-size: 0.85rem;
+        color: var(--text-muted, #9ca3af);
+    }
+    
+    .import-result {
+        text-align: center;
+        padding: 24px;
+        border-radius: 8px;
+    }
+    
+    .import-result.success {
+        background: rgba(5, 150, 105, 0.1);
+    }
+    
+    .import-result.error {
+        background: rgba(220, 38, 38, 0.1);
+    }
+    
+    .result-icon {
+        font-size: 3rem;
+        display: block;
+        margin-bottom: 12px;
+    }
+    
+    .import-result p {
+        margin: 0;
+        font-size: 1.1rem;
+        color: var(--text-primary, #1f2937);
+    }
+    
+    .import-details {
+        text-align: left;
+        margin-top: 16px;
+        padding: 12px 16px;
+        background: rgba(0,0,0,0.05);
+        border-radius: 6px;
+        list-style: none;
+    }
+    
+    .import-details li {
+        padding: 4px 0;
+        color: var(--text-secondary, #4b5563);
+    }
+    
+    .import-modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        padding: 16px 24px;
+        border-top: 1px solid var(--border-color, #e5e7eb);
+    }
+    
+    .btn {
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-primary {
+        background: var(--primary, #2563eb);
+        color: white;
+    }
+    
+    .btn-primary:hover:not(:disabled) {
+        background: var(--primary-dark, #1d4ed8);
+    }
+    
+    .btn-primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .btn-secondary {
+        background: var(--bg-secondary, #f3f4f6);
+        color: var(--text-primary, #1f2937);
+        border: 1px solid var(--border-color, #d1d5db);
+    }
+    
+    .btn-secondary:hover {
+        background: var(--bg-tertiary, #e5e7eb);
+    }
+</style>
+
+@code {
+    private bool showImportModal = false;
+    private bool isDragOver = false;
+    private bool isImporting = false;
+    private bool importSuccess = false;
+    private string selectedImportType = "";
+    private string importMessage = "";
+    private List<string> importDetails = new();
+    private IBrowserFile? selectedFile;
+    
+    private void OpenImportModal()
+    {
+        showImportModal = true;
+        ResetImport();
+    }
+    
+    private void CloseImportModal()
+    {
+        showImportModal = false;
+        ResetImport();
+    }
+    
+    private void ResetImport()
+    {
+        selectedFile = null;
+        selectedImportType = "";
+        importMessage = "";
+        importDetails.Clear();
+        isImporting = false;
+        importSuccess = false;
+    }
+    
+    private void HandleDragEnter() => isDragOver = true;
+    private void HandleDragLeave() => isDragOver = false;
+    
+    private void HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        isDragOver = false;
+    }
+    
+    private string FormatFileSize(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        return $"{bytes / (1024.0 * 1024.0):F1} MB";
+    }
+    
+    private async Task ProcessImport()
+    {
+        if (selectedFile == null || string.IsNullOrEmpty(selectedImportType))
+            return;
+            
+        isImporting = true;
+        StateHasChanged();
+        
+        try
+        {
+            // Read file content
+            using var stream = selectedFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024); // 10MB max
+            using var reader = new StreamReader(stream);
+            var content = await reader.ReadToEndAsync();
+            
+            // Parse and validate based on file type
+            var extension = Path.GetExtension(selectedFile.Name).ToLowerInvariant();
+            
+            if (extension == ".csv")
+            {
+                await ProcessCsvImport(content);
+            }
+            else if (extension == ".iif")
+            {
+                await ProcessIifImport(content);
+            }
+            else
+            {
+                importSuccess = false;
+                importMessage = "Unsupported file format. Please use CSV or IIF files.";
+            }
+        }
+        catch (Exception ex)
+        {
+            importSuccess = false;
+            importMessage = $"Error processing file: {ex.Message}";
+        }
+        finally
+        {
+            isImporting = false;
+            StateHasChanged();
+        }
+    }
+    
+    private async Task ProcessCsvImport(string content)
+    {
+        QBImportResult result;
+        
+        switch (selectedImportType.ToLower())
+        {
+            case "accounts":
+                result = await ImportService.ImportAccountsFromCsvAsync(content);
+                break;
+            case "customers":
+                result = await ImportService.ImportCustomersFromCsvAsync(content);
+                break;
+            case "vendors":
+                result = await ImportService.ImportVendorsFromCsvAsync(content);
+                break;
+            case "products":
+                result = await ImportService.ImportProductsFromCsvAsync(content);
+                break;
+            case "transactions":
+            case "invoices":
+            case "bills":
+                result = await ImportService.ImportTransactionsFromCsvAsync(content);
+                break;
+            default:
+                importSuccess = false;
+                importMessage = "Please select an import type.";
+                return;
+        }
+        
+        importSuccess = result.Success;
+        importMessage = result.Message;
+        importDetails.Add($"File: {selectedFile?.Name}");
+        importDetails.Add($"Records imported: {result.RecordsImported}");
+        if (result.RecordsUpdated > 0)
+            importDetails.Add($"Records updated: {result.RecordsUpdated}");
+        if (result.RecordsSkipped > 0)
+            importDetails.Add($"Records skipped: {result.RecordsSkipped}");
+        importDetails.AddRange(result.Details);
+        
+        if (result.Warnings.Any())
+            importDetails.AddRange(result.Warnings.Take(5).Select(w => $"Warning: {w}"));
+        if (result.Errors.Any())
+            importDetails.AddRange(result.Errors.Take(5).Select(e => $"Error: {e}"));
+    }
+    
+    private async Task ProcessIifImport(string content)
+    {
+        var result = await ImportService.ImportFromIifAsync(content);
+        
+        importSuccess = result.Success;
+        importMessage = result.Message;
+        importDetails.Add($"File: {selectedFile?.Name}");
+        importDetails.Add($"Records imported: {result.RecordsImported}");
+        if (result.RecordsUpdated > 0)
+            importDetails.Add($"Records updated: {result.RecordsUpdated}");
+        if (result.RecordsSkipped > 0)
+            importDetails.Add($"Records skipped: {result.RecordsSkipped}");
+        importDetails.AddRange(result.Details);
+        
+        if (result.Warnings.Any())
+            importDetails.AddRange(result.Warnings.Take(5).Select(w => $"Warning: {w}"));
+        if (result.Errors.Any())
+            importDetails.AddRange(result.Errors.Take(5).Select(e => $"Error: {e}"));
+    }
+}

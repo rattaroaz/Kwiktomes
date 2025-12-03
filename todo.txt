@@ -146,7 +146,16 @@ PHASE 13: SETTINGS & CONFIGURATION
 ================================================================================
 PHASE 14: Import Files from Quickbooks
 ================================================================================
-[ ] Be able to import files from Quickbooks
+[X] Import modal dialog (+ New button)
+[X] CSV file upload support
+[X] IIF file upload support
+[X] Parse and import Chart of Accounts from CSV
+[X] Parse and import Customers from CSV
+[X] Parse and import Vendors from CSV  
+[X] Parse and import Products from CSV
+[X] Parse and import Transactions from CSV
+[X] Full IIF file parsing and import
+[X] Data validation and conflict resolution
 ================================================================================
 PHASE 15: ADVANCED FEATURES (Future)
 ================================================================================

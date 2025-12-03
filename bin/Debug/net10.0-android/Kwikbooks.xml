@@ -1307,6 +1307,21 @@
             </summary>
             <typeparam name="T">The entity type</typeparam>
         </member>
+        <member name="T:Kwikbooks.Services.IImportService">
+            <summary>
+            Service for importing data from QuickBooks export files (CSV and IIF formats).
+            </summary>
+        </member>
+        <member name="T:Kwikbooks.Services.QBImportResult">
+            <summary>
+            Result of a QuickBooks import operation.
+            </summary>
+        </member>
+        <member name="M:Kwikbooks.Services.ImportService.GetExpectedCsvHeaders(System.String)">
+            <summary>
+            Returns expected CSV headers for each import type to help users format their files.
+            </summary>
+        </member>
         <member name="T:Kwikbooks.Services.IInvoicePdfService">
             <summary>
             Service for generating invoice PDFs.
