@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Kwiktomes")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0+ea2a3dfa32c909545535d91b22065ce39c3fa8a6")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0+562a42967ce8333bd19674abcd88afd092b29438")]
 [assembly: System.Reflection.AssemblyProductAttribute("Kwiktomes")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Kwiktomes")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
