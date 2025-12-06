@@ -1,0 +1,49 @@
+{
+  "Files": [
+    {
+      "Id": "C:\\Users\\kimri\\.nuget\\packages\\microsoft.aspnetcore.components.webview\\10.0.0\\staticwebassets\\blazor.modules.json",
+      "PackagePath": "staticwebassets\\_framework\\blazor.modules.json"
+    },
+    {
+      "Id": "C:\\Users\\kimri\\.nuget\\packages\\microsoft.aspnetcore.components.webview\\10.0.0\\staticwebassets\\blazor.webview.js",
+      "PackagePath": "staticwebassets\\_framework\\blazor.webview.js"
+    },
+    {
+      "Id": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwiktomes\\obj\\Release\\net10.0-maccatalyst\\scopedcss\\bundle\\Kwiktomes.styles.css",
+      "PackagePath": "staticwebassets\\Kwiktomes.styles.css"
+    },
+    {
+      "Id": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwiktomes\\wwwroot\\app.css",
+      "PackagePath": "staticwebassets\\app.css"
+    },
+    {
+      "Id": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwiktomes\\wwwroot\\index.html",
+      "PackagePath": "staticwebassets\\index.html"
+    },
+    {
+      "Id": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwiktomes\\wwwroot\\js\\app.js",
+      "PackagePath": "staticwebassets\\js\\app.js"
+    },
+    {
+      "Id": "obj\\Release\\net10.0-maccatalyst\\staticwebassets\\msbuild.Kwiktomes.Microsoft.AspNetCore.StaticWebAssetEndpoints.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssetEndpoints.props"
+    },
+    {
+      "Id": "obj\\Release\\net10.0-maccatalyst\\staticwebassets\\msbuild.Kwiktomes.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Release\\net10.0-maccatalyst\\staticwebassets\\msbuild.build.Kwiktomes.props",
+      "PackagePath": "build\\Kwiktomes.props"
+    },
+    {
+      "Id": "obj\\Release\\net10.0-maccatalyst\\staticwebassets\\msbuild.buildMultiTargeting.Kwiktomes.props",
+      "PackagePath": "buildMultiTargeting\\Kwiktomes.props"
+    },
+    {
+      "Id": "obj\\Release\\net10.0-maccatalyst\\staticwebassets\\msbuild.buildTransitive.Kwiktomes.props",
+      "PackagePath": "buildTransitive\\Kwiktomes.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

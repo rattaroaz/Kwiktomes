@@ -1,10 +1,10 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\",
+  "WorkspaceRootPath": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwiktomes\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{8C4DD8CE-84AF-EF80-283F-03F6330C7075}|Kwikbooks.csproj|c:\\users\\kimri\\onedrive\\desktop\\cloned repos\\kwikbooks\\kwikbooks\\components\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{8C4DD8CE-84AF-EF80-283F-03F6330C7075}|Kwikbooks.csproj|solutionrelative:components\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+      "AbsoluteMoniker": "D:0:0:{4DF8DDB5-3627-5EA2-3037-CFCA28CDDD8C}|Kwiktomes.csproj|c:\\users\\kimri\\onedrive\\desktop\\cloned repos\\kwiktomes\\components\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{4DF8DDB5-3627-5EA2-3037-CFCA28CDDD8C}|Kwiktomes.csproj|solutionrelative:components\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     }
   ],
   "DocumentGroupContainers": [
@@ -40,9 +40,9 @@
               "$type": "Document",
               "DocumentIndex": 0,
               "Title": "Home.razor",
-              "DocumentMoniker": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\Components\\Pages\\Home.razor",
+              "DocumentMoniker": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwiktomes\\Components\\Pages\\Home.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\Home.razor",
-              "ToolTip": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwikbooks\\Kwikbooks\\Components\\Pages\\Home.razor",
+              "ToolTip": "C:\\Users\\kimri\\OneDrive\\Desktop\\cloned repos\\Kwiktomes\\Components\\Pages\\Home.razor",
               "RelativeToolTip": "Components\\Pages\\Home.razor",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",

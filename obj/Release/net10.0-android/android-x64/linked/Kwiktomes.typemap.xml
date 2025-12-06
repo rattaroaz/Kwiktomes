@@ -1,0 +1,8 @@
+<api type="release" assembly-name="Kwiktomes" mvid="1818b2b8b4cf43cf81dfc0a9c0fdbe8e">
+  <module assembly-name="Kwiktomes" mvid="1818b2b8b4cf43cf81dfc0a9c0fdbe8e" mvid-bytes="uLIYGM+0z0OB38CpwP2+jg==">
+    <types-scratch>
+      <entry key="crc6467e6b5bd5fa398d7/MainActivity" java-name="crc6467e6b5bd5fa398d7/MainActivity" managed-type-name="Kwiktomes.MainActivity" token="33554455" />
+      <entry key="crc6467e6b5bd5fa398d7/MainApplication" java-name="crc6467e6b5bd5fa398d7/MainApplication" managed-type-name="Kwiktomes.MainApplication" token="33554456" />
+    </types-scratch>
+  </module>
+</api>
